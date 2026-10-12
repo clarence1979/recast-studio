@@ -1,0 +1,1318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recast Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #ECEDEA;
+  --surface: #F8F8F6;
+  --ink: #23292C;
+  --muted: #5D6669;
+  --line: #C8CCC8;
+  --chroma: #00B140;
+  --chroma-deep: #046B2B;
+  --on-chroma: #062B14;
+  --tape: #F2A900;
+  --danger: #B3261E;
+  --monitor: #15191B;
+  --radius-s: 4px;
+  --radius-m: 8px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1C2022; --surface: #252A2D; --ink: #E6E9E6; --muted: #9AA3A6;
+    --line: #3A4246; --chroma: #12BF55; --chroma-deep: #4BDC86; --on-chroma: #04210F;
+    --tape: #F2B61F; --danger: #F2867E; --monitor: #0E1112; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1C2022; --surface: #252A2D; --ink: #E6E9E6; --muted: #9AA3A6;
+  --line: #3A4246; --chroma: #12BF55; --chroma-deep: #4BDC86; --on-chroma: #04210F;
+  --tape: #F2B61F; --danger: #F2867E; --monitor: #0E1112; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  font-stretch: 100%;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--chroma-deep); outline-offset: 2px; }
+a { color: var(--chroma-deep); }
+
+.page { max-width: 1320px; margin: 0 auto; padding: 22px 24px 40px; }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px 32px; justify-content: space-between; }
+.brand h1 {
+  margin: 0;
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 34px;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.brand p { margin: 6px 0 0; color: var(--muted); }
+.keybox { display: grid; gap: 6px; min-width: min(460px, 100%); flex: 0 1 460px; }
+.keybox label { font-weight: 600; font-size: 13px; }
+.keyrow { display: flex; gap: 8px; }
+.keyrow input { flex: 1; min-width: 0; }
+.checks { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+
+input[type=text], input[type=password], input[type=url], textarea, select {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  padding: 8px 10px;
+}
+textarea { width: 100%; resize: vertical; min-height: 64px; }
+input:disabled, textarea:disabled, select:disabled { opacity: .55; }
+label.check { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+input[type=checkbox], input[type=radio] { accent-color: var(--chroma-deep); width: 16px; height: 16px; margin: 0; }
+
+.banner {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-left: 6px solid var(--tape);
+  background: var(--surface);
+  border-radius: var(--radius-s);
+}
+.banner code { font-size: 14px; }
+.banner[hidden] { display: none; }
+
+/* Studio layout */
+.studio { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 28px; margin-top: 22px; align-items: start; }
+.monitors { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.monitor { display: grid; gap: 8px; align-content: start; }
+.screen {
+  position: relative;
+  height: clamp(300px, 56vh, 560px);
+  background: var(--monitor);
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.screen video, .screen img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.screen .empty { color: #8C9497; text-align: center; padding: 24px; max-width: 28ch; }
+.screen .empty strong { display: block; color: #E6E9E6; font-stretch: 112%; font-size: 18px; margin-bottom: 6px; }
+
+/* The green screen: the one loud thing on the page */
+.screen.greenscreen {
+  background-color: var(--chroma);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cpath d='M36 28v16M28 36h16' stroke='%23ffffff' stroke-opacity='.55' stroke-width='3' stroke-linecap='square'/%3E%3C/svg%3E");
+  background-position: center;
+}
+.screen.greenscreen .empty { color: var(--on-chroma); background: var(--chroma); padding: 18px 22px; border-radius: var(--radius-s); }
+.screen.greenscreen .empty strong { color: #fff; font-stretch: 125%; font-weight: 800; font-size: 22px; }
+.screen.working::after {
+  content: "";
+  position: absolute; inset: auto 0 0 0; height: 4px;
+  background: linear-gradient(90deg, transparent, var(--tape), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: sweep 1.4s linear infinite;
+}
+@keyframes sweep { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+@media (prefers-reduced-motion: reduce) { .screen.working::after { animation: none; background: var(--tape); } }
+
+.caption { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.caption h2 { margin: 0; font-size: 15px; font-weight: 700; }
+.caption span { color: var(--muted); font-size: 13px; font-stretch: 87.5%; }
+.scrub { width: 100%; accent-color: var(--chroma-deep); }
+.hint { margin: 0; color: var(--muted); font-size: 13px; }
+
+.filepick {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.filepick input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.fileinfo { color: var(--muted); font-size: 14px; }
+
+/* Approve bar */
+.approve {
+  display: grid; gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 2px solid var(--tape);
+  border-radius: var(--radius-m);
+}
+.approve[hidden] { display: none; }
+.approve p { margin: 0; font-weight: 600; }
+.approve .row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.result-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.result-actions[hidden] { display: none; }
+
+/* Buttons */
+.btn {
+  border: 1px solid var(--ink);
+  background: transparent;
+  border-radius: var(--radius-s);
+  padding: 9px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.2;
+}
+.btn:hover:not(:disabled) { background: var(--surface); }
+.btn:disabled, .btn.disabled { opacity: .4; cursor: not-allowed; }
+.btn.ink { background: var(--ink); color: var(--paper); }
+.btn.ink:hover:not(:disabled) { background: var(--ink); filter: brightness(1.25); }
+.btn.go { background: var(--chroma); border-color: var(--chroma); color: var(--on-chroma); }
+.btn.go:hover:not(:disabled) { background: var(--chroma); filter: brightness(1.08); }
+.btn.quiet { border-color: var(--line); }
+.btn .n { display: inline-block; min-width: 1.4em; font-stretch: 125%; font-weight: 800; }
+
+/* Control rail */
+.rail { display: grid; gap: 22px; }
+.rail section { display: grid; gap: 10px; }
+.rail h2 { margin: 0; font-size: 17px; font-stretch: 112%; font-weight: 700; }
+.rail .sub { margin: -6px 0 0; color: var(--muted); font-size: 13px; }
+.choice { display: grid; gap: 8px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-s); overflow: hidden; }
+.seg label { padding: 6px 14px; cursor: pointer; font-size: 14px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label:has(input:checked) { background: var(--ink); color: var(--paper); }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--chroma-deep); outline-offset: -2px; }
+.inline { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.plan { border-top: 1px solid var(--line); padding-top: 18px; }
+.plan dl { margin: 0; display: grid; gap: 10px; }
+.plan dt { font-size: 13px; color: var(--muted); }
+.plan dd { margin: 2px 0 0; }
+.plan .scenario { font-size: 17px; font-weight: 600; line-height: 1.35; }
+.plan .why { color: var(--muted); font-size: 14px; }
+.plan .models { font-stretch: 87.5%; color: var(--muted); font-size: 14px; }
+.plan .estimate { display: inline-block; background: var(--tape); color: #2A2100; padding: 2px 8px; border-radius: 2px; font-weight: 600; }
+.plan select { width: 100%; }
+.plan .placeholder { color: var(--muted); }
+
+/* Activity */
+.activity { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 14px; }
+.activity summary { cursor: pointer; font-weight: 700; display: flex; justify-content: space-between; gap: 12px; }
+.activity summary span { font-weight: 400; color: var(--muted); }
+.status { margin: 10px 0 0; font-weight: 600; }
+.status.error { color: var(--danger); }
+#log { margin: 10px 0 0; padding: 0; list-style: none; max-height: 220px; overflow: auto; font-size: 13px; font-stretch: 87.5%; }
+#log li { padding: 3px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); display: grid; grid-template-columns: 70px 1fr; gap: 10px; }
+#log time { color: var(--muted); }
+#log li.err { color: var(--danger); }
+details.conn { font-size: 13px; color: var(--muted); }
+details.conn summary { cursor: pointer; }
+details.conn .inline { margin-top: 8px; }
+details.conn input { flex: 1; min-width: 200px; }
+
+@media (max-width: 1080px) {
+  .studio { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .page { padding: 16px 16px 32px; }
+  .brand h1 { font-size: 28px; }
+  .monitors { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .screen { height: 46vh; min-height: 260px; }
+}
+@media (max-width: 420px) {
+  .monitors { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <div class="brand">
+      <h1>Recast Studio</h1>
+      <p>Turn one take into a new scene, using models on Replicate.</p>
+    </div>
+    <div class="keybox">
+      <label for="key">Replicate API key</label>
+      <div class="keyrow">
+        <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="r8_...">
+        <button class="btn quiet" id="showKey" type="button">Show</button>
+      </div>
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="rememberKey"> Remember in this browser</label>
+      </div>
+    </div>
+  </header>
+
+  <div class="banner" id="relayBanner" role="status" hidden></div>
+
+  <main class="studio">
+    <div>
+      <div class="filepick">
+        <label class="btn ink" for="file" id="fileBtn" tabindex="0" role="button">Choose base video</label>
+        <input id="file" type="file" accept="video/*">
+        <span class="fileinfo" id="fileInfo">MP4 or MOV. Shorter clips cost less.</span>
+      </div>
+
+      <div class="monitors">
+        <div class="monitor">
+          <div class="screen" id="origScreen">
+            <div class="empty" id="origEmpty"><strong>Your take</strong>Choose a video of yourself to start.</div>
+            <video id="orig" playsinline preload="auto" hidden></video>
+          </div>
+          <div class="caption"><h2>Original</h2><span id="keyTime"></span></div>
+          <input class="scrub" id="scrub" type="range" min="0" max="1" step="0.01" value="0" disabled aria-label="Keyframe position">
+          <p class="hint" id="scrubHint">After you load a video, drag to pick a clear, front-facing pose.</p>
+        </div>
+
+        <div class="monitor">
+          <div class="screen greenscreen" id="newScreen">
+            <div class="empty" id="newEmpty"><strong>New look</strong>The planned scene lands here.</div>
+            <img id="newImg" alt="New look keyframe" hidden>
+            <video id="result" playsinline controls hidden></video>
+          </div>
+          <div class="caption"><h2 id="newTitle">New look</h2><span id="newModel"></span></div>
+          <div class="approve" id="approve" hidden>
+            <p>Happy with this look?</p>
+            <div class="row">
+              <button class="btn go" id="approveYes" type="button">Animate it</button>
+              <button class="btn" id="approveRetry" type="button">Try another look</button>
+              <button class="btn quiet" id="approveStop" type="button">Stop</button>
+            </div>
+          </div>
+          <div class="result-actions" id="resultActions" hidden>
+            <button class="btn go" id="downloadBtn" type="button">Download video</button>
+            <button class="btn" id="compareBtn" type="button">Play both</button>
+            <button class="btn quiet" id="lookBtn" type="button">Download look</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="rail">
+      <section>
+        <h2>What should it become?</h2>
+        <div class="choice" role="radiogroup" aria-label="Output">
+          <label class="check"><input type="radio" name="mode" value="auto" checked> Automatic: the AI picks a scenario</label>
+          <label class="check"><input type="radio" name="mode" value="describe"> Describe it myself</label>
+          <textarea id="desc" rows="3" disabled placeholder="White tuxedo in a private-jet hangar with a red supercar behind me"></textarea>
+        </div>
+      </section>
+
+      <section>
+        <h2>Settings</h2>
+        <div class="inline">
+          <div class="seg" role="radiogroup" aria-label="Quality">
+            <label><input type="radio" name="res" value="720p" checked>720p</label>
+            <label><input type="radio" name="res" value="1080p">1080p</label>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="budget"> Budget mode: always the cheapest pipeline, turbo speed</label>
+        <label class="check"><input type="checkbox" id="approveFirst" checked> Let me approve the new look before animating</label>
+      </section>
+
+      <section>
+        <div class="actions">
+          <button class="btn ink" id="planBtn" type="button" disabled><span class="n">1</span> Plan the shot</button>
+          <button class="btn go" id="genBtn" type="button" disabled><span class="n">2</span> Generate</button>
+          <button class="btn quiet" id="cancelBtn" type="button" disabled>Cancel</button>
+        </div>
+      </section>
+
+      <section class="plan" aria-live="polite">
+        <h2>Plan</h2>
+        <dl>
+          <div>
+            <dt>Scenario</dt>
+            <dd class="scenario" id="planScenario"><span class="placeholder">Plan the shot and the AI writes the scenario and picks the models.</span></dd>
+          </div>
+          <div>
+            <dt><label for="pipeline">Pipeline</label></dt>
+            <dd>
+              <select id="pipeline" disabled></select>
+              <div class="models" id="planModels"></div>
+              <div class="why" id="planWhy"></div>
+            </dd>
+          </div>
+          <div>
+            <dt><label for="instruction">Instruction sent to the models (you can edit it)</label></dt>
+            <dd><textarea id="instruction" rows="4" disabled></textarea></dd>
+          </div>
+          <div>
+            <dt>Estimated cost</dt>
+            <dd id="planCost"><span class="placeholder">Shown after planning.</span></dd>
+          </div>
+        </dl>
+      </section>
+
+      <details class="conn">
+        <summary>Connection</summary>
+        <div class="inline">
+          <input id="relayUrl" type="url" placeholder="Relay address (blank = automatic)" spellcheck="false">
+          <button class="btn quiet" id="relaySave" type="button">Save</button>
+        </div>
+      </details>
+    </aside>
+  </main>
+
+  <details class="activity" open>
+    <summary>Activity <span id="spend">Spent this session: about $0.00</span></summary>
+    <p class="status" id="status">Ready. Paste your key and choose a video.</p>
+    <ol id="log"></ol>
+  </details>
+</div>
+
+<script>
+"use strict";
+
+/* Where this page sends its Replicate calls.
+   On GitHub Pages: paste your Cloudflare Worker address between the quotes,
+   for example "https://recast-relay.yourname.workers.dev" (see README.md).
+   Leave it blank to use the local relay (python recast_relay.py). */
+const RELAY_URL = "https://recast-relay.clarence17.workers.dev";
+
+/* ------------------------------------------------------------------ *
+ * Models and pipelines (same routing as the Python app)
+ * ------------------------------------------------------------------ */
+const PLANNER_MODELS = ["google/gemini-3-flash", "openai/gpt-5", "anthropic/claude-4.5-sonnet"];
+const IMAGE_EDIT_MODELS = ["google/nano-banana-pro", "google/nano-banana"];
+const ANIMATE_MODEL = "prunaai/p-video-animate";
+const VIDEOEDIT_MODEL = "wan-video/wan-2.7-videoedit";
+const RESTYLE_MODEL = "luma/modify-video";
+
+const PIPELINES = {
+  recast:  { label: "Recast: new look, same motion",      models: `${IMAGE_EDIT_MODELS[0]}, then ${ANIMATE_MODEL}`, min: null, max: null },
+  edit:    { label: "Edit: change one thing, keep the rest", models: VIDEOEDIT_MODEL, min: 2, max: 10 },
+  restyle: { label: "Restyle: artistic look",              models: RESTYLE_MODEL, min: null, max: 30 },
+};
+
+// USD estimates. p-video-animate's rates are published on its model page; the rest are approximate.
+const PRICE = {
+  planner: 0.01, imageEdit: 0.15,
+  animate: { "720p": 0.03, "1080p": 0.06 },
+  videoedit: { "720p": 0.10, "1080p": 0.15 },
+  restyle: { "720p": 0.20, "1080p": 0.30 },
+};
+
+const IMAGE_KEYS = ["image_input", "images", "input_images", "image", "input_image"];
+const PLANNER_IMAGE_KEYS = ["images", "image_input", "image", "input_images", "image_urls"];
+const SYSTEM_KEYS = ["system_instruction", "system_prompt", "system"];
+const MAX_TOKEN_KEYS = ["max_output_tokens", "max_tokens", "max_completion_tokens"];
+const PLANNER_GUESSES = {
+  "google/gemini-3-flash": ["system_instruction", "images", true],
+  "openai/gpt-5": ["system_prompt", "image_input", true],
+  "anthropic/claude-4.5-sonnet": ["system_prompt", "image", false],
+};
+
+const PLANNER_SYSTEM = `You are the planner for a video "recast" tool. The user supplies a short real video (usually a person performing to camera) and either a description of the output they want, or AUTOMATIC.
+
+Choose ONE pipeline:
+- "recast": the whole look changes - new outfit, new location or set, new lighting, or a different character - while the motion, timing and camera framing stay the same. The tool edits one keyframe into the new look, then a motion-transfer model animates it with the original motion. This is the best choice for "glow-up" transformations.
+- "edit": a targeted change to one or two elements while everything else stays as filmed - e.g. change the shirt colour, add sunglasses, replace only the background, remove an object. Only possible for clips of 2-10 seconds.
+- "restyle": an artistic look applied to the whole clip while keeping its content - e.g. anime, claymation, watercolour, 3D cartoon, film noir. Clips up to 30 seconds.
+
+Write "instruction" as a direct, imperative editing instruction that is specific and visual: wardrobe, set, props, lighting, colour grade. Always keep the same person (face, hair, body, identity), the same pose and gestures, and the same camera angle and framing. Never change the person's face or identity unless the user explicitly asks for a different character.
+
+If the request is AUTOMATIC: invent one striking, cinematic, believable transformation that suits what the person is doing in the frames (pose, gesture, energy) - for example a luxury, sci-fi, fantasy, sports-hero or period-film setting. Prefer "recast". Make the new setting fit the gesture (a presenting gesture should reveal something impressive behind them).
+
+Rules: no real brand names, logos, celebrities or copyrighted characters; nothing sexual, gory or hateful; no text overlays.
+
+Reply with JSON only - no prose, no code fences:
+{"scenario": "<one sentence for the user describing the result>",
+ "pipeline": "recast" | "edit" | "restyle",
+ "instruction": "<editing instruction, 1-3 sentences>",
+ "photoreal": true | false,
+ "restyle_strength": "adhere" | "flex" | "reimagine",
+ "why": "<one short sentence explaining the pipeline choice>"}`;
+
+const STYLE_PHOTO = "Photorealistic, like a frame from a high-end commercial, with lighting that matches the new scene.";
+const STYLE_ART = "Apply the new style consistently to the whole image, including the person.";
+const keyframePrompt = (instruction, photoreal) =>
+  `Edit this photo: ${instruction.replace(/\.+$/, "")}\n\n` +
+  "Keep the exact same person - same face, hairstyle, skin tone, body shape and identity. " +
+  "Keep the exact same pose, hand positions, body position, camera angle, framing and aspect ratio, " +
+  `so the image lines up with the original frame. ${photoreal ? STYLE_PHOTO : STYLE_ART} ` +
+  "No text, captions, logos or watermarks.";
+const ANIMATE_NOTE = "Animate the person from the reference image with exactly the motion, gestures, timing and " +
+  "camera movement of the source video. Keep the outfit, setting and lighting from the reference image " +
+  "consistent in every frame.";
+
+const FALLBACK_SCENARIOS = [
+  "Dress the person in a tailored white tuxedo with a black bow tie and place them in a polished private-jet hangar with a gleaming red supercar beside them, warm cinematic lighting.",
+  "Put the person in a sleek silver space suit on the bridge of a starship, with a glowing planet visible through the window behind them and cool blue lighting.",
+  "Dress the person in ornate royal robes and place them in a candlelit throne room of a grand castle, golden hour light streaming through tall windows.",
+  "Put the person in a champion's tracksuit on a confetti-filled stadium stage under bright spotlights, with a huge cheering crowd behind them.",
+];
+const STYLE_WORDS = ["anime", "cartoon", "claymation", "clay ", "watercolor", "watercolour", "painting", "sketch",
+  "pixel", "comic", "noir", "illustration", "cel-shaded", "3d animated"];
+const EDIT_WORDS = ["only ", "just ", "colour of", "color of", "remove ", "add a ", "add some ",
+  "replace the background", "swap the", "change the shirt", "change his shirt", "change her shirt"];
+
+const POLL_MS = new URLSearchParams(location.search).has("fastpoll") ? 150 : 2000;
+
+/* ------------------------------------------------------------------ *
+ * State and small helpers
+ * ------------------------------------------------------------------ */
+const $ = (s) => document.querySelector(s);
+const els = {
+  key: $("#key"), showKey: $("#showKey"), remember: $("#rememberKey"), banner: $("#relayBanner"),
+  file: $("#file"), fileBtn: $("#fileBtn"), fileInfo: $("#fileInfo"),
+  orig: $("#orig"), origEmpty: $("#origEmpty"), scrub: $("#scrub"), keyTime: $("#keyTime"), scrubHint: $("#scrubHint"),
+  newScreen: $("#newScreen"), newEmpty: $("#newEmpty"), newImg: $("#newImg"), result: $("#result"),
+  newTitle: $("#newTitle"), newModel: $("#newModel"),
+  approve: $("#approve"), approveYes: $("#approveYes"), approveRetry: $("#approveRetry"), approveStop: $("#approveStop"),
+  resultActions: $("#resultActions"), downloadBtn: $("#downloadBtn"), compareBtn: $("#compareBtn"), lookBtn: $("#lookBtn"),
+  desc: $("#desc"), budget: $("#budget"), approveFirst: $("#approveFirst"),
+  planBtn: $("#planBtn"), genBtn: $("#genBtn"), cancelBtn: $("#cancelBtn"),
+  pipeline: $("#pipeline"), planScenario: $("#planScenario"), planModels: $("#planModels"), planWhy: $("#planWhy"),
+  instruction: $("#instruction"), planCost: $("#planCost"),
+  relayUrl: $("#relayUrl"), relaySave: $("#relaySave"),
+  spend: $("#spend"), status: $("#status"), log: $("#log"),
+};
+
+const state = {
+  file: null, objectUrl: null, cap: null, info: null, plan: null,
+  busy: false, cancel: false, approveResolver: null,
+  schemas: new Map(), uploads: new Map(),
+  spend: 0, lookUrl: null, outputUrl: null, outName: null,
+};
+
+class Cancelled extends Error { constructor() { super("Cancelled"); this.name = "Cancelled"; } }
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { /* storage blocked */ } },
+};
+
+function relayBase() {
+  const custom = (store.get("recast.relay") || "").trim().replace(/\/+$/, "");
+  if (custom) return custom;
+  if (RELAY_URL.trim()) return RELAY_URL.trim().replace(/\/+$/, "");
+  return location.protocol.startsWith("http") ? "" : "http://localhost:8765";
+}
+
+/* What to tell the person when the relay can't be reached, for wherever the page is running. */
+function relayHelp() {
+  const base = relayBase();
+  const localRelay = /^http:\/\/(localhost|127\.0\.0\.1):8765$/.test(base);
+  const servedLocally = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  if (!base && location.protocol.startsWith("http") && !servedLocally) {
+    return "This page doesn't know its relay address yet. Set RELAY_URL near the top of index.html to your Cloudflare Worker address (see README.md).";
+  }
+  if (!base || localRelay) {
+    return "The relay isn't running, so this page can't reach Replicate. Run python recast_relay.py in the folder with this file, then open http://localhost:8765.";
+  }
+  return `Can't reach the relay at ${base}. Check that the Worker is deployed and that ${location.origin} is listed in its ALLOWED_ORIGINS.`;
+}
+
+const sleep = (ms) => new Promise((resolve, reject) => {
+  const started = Date.now();
+  const tick = () => {
+    if (state.cancel) return reject(new Cancelled());
+    if (Date.now() - started >= ms) return resolve();
+    setTimeout(tick, Math.min(150, ms));
+  };
+  tick();
+});
+
+function short(err, limit = 260) {
+  const text = String(err && err.message ? err.message : err || "").trim().split("\n")[0];
+  return text.slice(0, limit) || "Unknown error";
+}
+
+function log(message, isError = false) {
+  const li = document.createElement("li");
+  if (isError) li.className = "err";
+  const t = document.createElement("time");
+  t.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const span = document.createElement("span");
+  span.textContent = message;
+  li.append(t, span);
+  els.log.append(li);
+  els.log.scrollTop = els.log.scrollHeight;
+}
+
+function setStatus(message, isError = false) {
+  els.status.textContent = message;
+  els.status.classList.toggle("error", isError);
+}
+
+function addSpend(amount) {
+  state.spend += amount;
+  els.spend.textContent = `Spent this session: about $${state.spend.toFixed(2)}`;
+}
+
+const fmtTime = (s) => { s = Math.max(0, Math.round(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+const money = (n) => `$${n.toFixed(2)}`;
+
+/* ------------------------------------------------------------------ *
+ * Schema-aware input shaping
+ * ------------------------------------------------------------------ */
+const pick = (props, candidates) => (props ? candidates.find((c) => c in props) || null : null);
+const isArray = (prop) => !!prop && prop.type === "array";
+
+function resolveProps(schema) {
+  const comps = (schema && schema.components && schema.components.schemas) || {};
+  const input = comps.Input || {};
+  const props = {};
+  for (const [name, prop] of Object.entries(input.properties || {})) {
+    const merged = {};
+    for (const holder of [...(prop.allOf || []), ...(prop.anyOf || [])]) {
+      const ref = holder.$ref || "";
+      if (ref.startsWith("#/components/schemas/")) Object.assign(merged, comps[ref.split("/").pop()] || {});
+    }
+    for (const [k, v] of Object.entries(prop)) if (k !== "allOf" && k !== "anyOf") merged[k] = v;
+    props[name] = merged;
+  }
+  return [props, input.required || []];
+}
+
+function fitToSchema(props, required, input) {
+  if (!props) return input;
+  const out = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (!(key in props) || value === null || value === undefined) continue;
+    const allowed = props[key].enum;
+    let v = value;
+    if (allowed && !allowed.includes(v)) {
+      const match = allowed.find((e) => String(e).toLowerCase() === String(v).toLowerCase());
+      if (match === undefined) { log(`  ${key}=${JSON.stringify(v)} isn't an option for this model, so its default is used`); continue; }
+      v = match;
+    }
+    out[key] = v;
+  }
+  const missing = required.filter((r) => !(r in out));
+  if (missing.length) throw new Error(`this model needs inputs the app doesn't fill: ${missing.join(", ")}`);
+  return out;
+}
+
+function chooseEnum(values, want) {
+  const matches = values.filter((v) => String(v).toLowerCase().includes(want));
+  return matches.length ? matches[Math.floor(matches.length / 2)] : null;
+}
+
+function outputText(out) {
+  if (out == null) return "";
+  if (typeof out === "string") return out;
+  if (Array.isArray(out)) return out.map(String).join("");
+  if (typeof out === "object") return String(out.text || out.output || JSON.stringify(out));
+  return String(out);
+}
+
+function outputUrl(out) {
+  if (typeof out === "string") return /^(https?:|data:)/.test(out) ? out : null;
+  if (Array.isArray(out)) { for (const item of out) { const u = outputUrl(item); if (u) return u; } return null; }
+  if (out && typeof out === "object") {
+    for (const k of ["video", "output", "url", "image", "images"]) if (k in out) { const u = outputUrl(out[k]); if (u) return u; }
+  }
+  return null;
+}
+
+function parsePlanJson(text) {
+  text = text.replace(/```(?:json)?/g, "").trim();
+  const start = text.indexOf("{"), end = text.lastIndexOf("}");
+  if (start === -1 || end <= start) throw new Error("the planner didn't return JSON");
+  return JSON.parse(text.slice(start, end + 1));
+}
+
+function guardPipeline(pipeline, duration, budget = false) {
+  if (!(pipeline in PIPELINES)) pipeline = "recast";
+  if (budget && pipeline !== "recast") return ["recast", "Budget mode is on, so the cheapest pipeline (Recast) is used."];
+  const spec = PIPELINES[pipeline];
+  const name = spec.label.split(":")[0];
+  if (spec.max && duration > spec.max + 0.05) return ["recast", `${name} only takes clips up to ${spec.max} s, so Recast is used instead.`];
+  if (spec.min && duration > 0 && duration < spec.min) return ["recast", `${name} needs at least ${spec.min} s of video, so Recast is used instead.`];
+  return [pipeline, null];
+}
+
+function heuristicPipeline(text) {
+  const low = ` ${text.toLowerCase()} `;
+  if (STYLE_WORDS.some((w) => low.includes(w))) return "restyle";
+  if (EDIT_WORDS.some((w) => low.includes(w))) return "edit";
+  return "recast";
+}
+
+function fallbackPlan(description) {
+  if (description) {
+    const p = heuristicPipeline(description);
+    return { scenario: description, pipeline: p, instruction: description, photoreal: p !== "restyle",
+      why: "Chosen by keyword rules because no AI planner was reachable.", planner: "built-in rules" };
+  }
+  const idea = FALLBACK_SCENARIOS[Math.floor(Math.random() * FALLBACK_SCENARIOS.length)];
+  return { scenario: idea, pipeline: "recast", instruction: idea, photoreal: true,
+    why: "Built-in idea used because no AI planner was reachable.", planner: "built-in rules" };
+}
+
+function normalisePlan(raw, duration, budget, description) {
+  const plan = {
+    scenario: String(raw.scenario || description || "A new look for your clip").trim(),
+    pipeline: String(raw.pipeline || raw.route || "recast").toLowerCase().trim(),
+    instruction: String(raw.instruction || description || "").trim(),
+    photoreal: ![false, "false", "False", 0].includes(raw.photoreal),
+    restyleStrength: String(raw.restyle_strength || "flex").toLowerCase().trim(),
+    why: String(raw.why || "").trim(),
+    planner: raw.planner || "built-in rules",
+    notes: [],
+  };
+  if (!["adhere", "flex", "reimagine"].includes(plan.restyleStrength)) plan.restyleStrength = "flex";
+  if (!plan.instruction) plan.instruction = plan.scenario;
+  const [p, note] = guardPipeline(plan.pipeline, duration, budget);
+  plan.pipeline = p;
+  if (note) plan.notes.push(note);
+  return plan;
+}
+
+function estimateCost(pipeline, seconds, res) {
+  seconds = Math.max(seconds, 1);
+  if (pipeline === "recast") return PRICE.imageEdit + PRICE.animate[res] * seconds;
+  if (pipeline === "edit") return PRICE.videoedit[res] * Math.min(seconds, 10);
+  return PRICE.restyle[res] * seconds;
+}
+
+/* ------------------------------------------------------------------ *
+ * Replicate via the relay
+ * ------------------------------------------------------------------ */
+function friendlyError(err) {
+  if (err instanceof Cancelled) return "Cancelled.";
+  if (err && err.network) return relayHelp();
+  if (err && err.status === 401) return "Replicate rejected the API key. Check it at replicate.com, under Account, API tokens.";
+  if (err && err.status === 402) return "Replicate says your account needs billing set up or more credit.";
+  if (err && err.status === 429) return "Replicate is rate-limiting requests. Wait a minute, then try again.";
+  return short(err, 500);
+}
+const isFatal = (err) => err instanceof Cancelled || (err && (err.network || [401, 402].includes(err.status)));
+
+async function api(path, { method = "GET", json, form } = {}) {
+  const key = els.key.value.trim();
+  const headers = { Authorization: `Bearer ${key}` };
+  let body;
+  if (json !== undefined) { headers["Content-Type"] = "application/json"; body = JSON.stringify(json); }
+  if (form) body = form;
+  let res;
+  try {
+    res = await fetch(`${relayBase()}/api${path}`, { method, headers, body });
+  } catch (e) {
+    const err = new Error("Can't reach the relay");
+    err.network = true;
+    throw err;
+  }
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : {}; } catch { data = { detail: text.slice(0, 300) }; }
+  if (!res.ok) {
+    const err = new Error(data.detail || data.title || `HTTP ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+async function getSchema(model) {
+  if (!state.schemas.has(model)) {
+    try {
+      const m = await api(`/v1/models/${model}`);
+      const schema = m.latest_version && m.latest_version.openapi_schema;
+      if (!schema) throw new Error("no schema published");
+      state.schemas.set(model, resolveProps(schema));
+    } catch (err) {
+      if (isFatal(err)) throw err;
+      log(`  Couldn't read ${model}'s inputs, so built-in defaults are used (${short(err)})`);
+      state.schemas.set(model, [null, []]);
+    }
+  }
+  return state.schemas.get(model);
+}
+
+async function uploadBlob(blob, filename, cacheKey) {
+  if (cacheKey && state.uploads.has(cacheKey)) return state.uploads.get(cacheKey);
+  if (state.cancel) throw new Cancelled();
+  setStatus(`Uploading ${filename} (${(blob.size / 1e6).toFixed(1)} MB)...`);
+  const form = new FormData();
+  form.append("content", blob, filename);
+  const file = await api("/v1/files", { method: "POST", form });
+  const url = file.urls && file.urls.get;
+  if (!url) throw new Error("Upload didn't return a file link");
+  if (cacheKey) state.uploads.set(cacheKey, url);
+  return url;
+}
+
+async function runModel(model, input, label) {
+  if (state.cancel) throw new Cancelled();
+  const [props, required] = await getSchema(model);
+  input = fitToSchema(props, required, input);
+  log(`${label}: ${model}`);
+  setStatus(`${label}: starting...`);
+  let pred = await api(`/v1/models/${model}/predictions`, { method: "POST", json: { input } });
+  const t0 = Date.now();
+  while (!["succeeded", "failed", "canceled"].includes(pred.status)) {
+    try {
+      await sleep(POLL_MS);
+    } catch (e) {
+      try { await api(`/v1/predictions/${pred.id}/cancel`, { method: "POST" }); log("  Cancelled on Replicate"); } catch { /* best effort */ }
+      throw e;
+    }
+    pred = await api(`/v1/predictions/${pred.id}`);
+    setStatus(`${label}: ${pred.status}... ${Math.round((Date.now() - t0) / 1000)} s`);
+  }
+  if (pred.status !== "succeeded") throw new Error(`${label} failed: ${short(pred.error || pred.status, 400)}`);
+  log(`  Finished in ${Math.round((Date.now() - t0) / 1000)} s`);
+  return pred.output;
+}
+
+/* ------------------------------------------------------------------ *
+ * Video frames in the browser
+ * ------------------------------------------------------------------ */
+function waitFor(el, event, ms = 15000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { cleanup(); reject(new Error(`timed out waiting for ${event}`)); }, ms);
+    const ok = () => { cleanup(); resolve(); };
+    const bad = () => { cleanup(); reject(new Error("This browser can't decode the video. Export it as an H.264 MP4 and try again.")); };
+    const cleanup = () => { clearTimeout(timer); el.removeEventListener(event, ok); el.removeEventListener("error", bad); };
+    el.addEventListener(event, ok, { once: true });
+    el.addEventListener("error", bad, { once: true });
+  });
+}
+
+function seek(video, t) {
+  return new Promise((resolve) => {
+    const target = Math.min(Math.max(t, 0), Math.max(video.duration - 0.05, 0));
+    const done = () => { clearTimeout(timer); resolve(); };
+    const timer = setTimeout(() => { video.removeEventListener("seeked", done); resolve(); }, 4000);
+    video.addEventListener("seeked", done, { once: true });
+    video.currentTime = target;
+  });
+}
+
+function drawFrame(video, maxSide) {
+  const scale = Math.min(1, maxSide / Math.max(video.videoWidth, video.videoHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+  canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+  canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+async function captureFrame(t, maxSide, quality = 0.9) {
+  await seek(state.cap, t);
+  const canvas = drawFrame(state.cap, maxSide);
+  const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", quality));
+  if (!blob) throw new Error("Couldn't capture a frame from the video.");
+  return blob;
+}
+
+const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+  const fr = new FileReader();
+  fr.onload = () => resolve(fr.result);
+  fr.onerror = () => reject(fr.error);
+  fr.readAsDataURL(blob);
+});
+
+function sharpness(canvas) {
+  const { width: w, height: h } = canvas;
+  const px = canvas.getContext("2d").getImageData(0, 0, w, h).data;
+  const g = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) g[i] = 0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2];
+  let sum = 0, sq = 0, n = 0;
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const i = y * w + x;
+    const l = 4 * g[i] - g[i - 1] - g[i + 1] - g[i - w] - g[i + w];
+    sum += l; sq += l * l; n++;
+  }
+  return n ? sq / n - (sum / n) ** 2 : 0;
+}
+
+async function pickKeyframeTime(duration) {
+  if (!(duration > 0)) return 0;
+  let best = 0, bestScore = -1;
+  for (const frac of [0.05, 0.15, 0.25, 0.35, 0.5]) {
+    const t = duration * frac;
+    await seek(state.cap, t);
+    const score = sharpness(drawFrame(state.cap, 200));
+    if (score > bestScore) { best = t; bestScore = score; }
+  }
+  return best;
+}
+
+/* ------------------------------------------------------------------ *
+ * The pipeline steps
+ * ------------------------------------------------------------------ */
+function plannerInput(model, props, prompt, frames, auto) {
+  const input = { prompt };
+  let sysKey, imgKey, imgArray;
+  if (props) {
+    sysKey = pick(props, SYSTEM_KEYS);
+    imgKey = pick(props, PLANNER_IMAGE_KEYS);
+    if (!imgKey) return null;
+    imgArray = isArray(props[imgKey]);
+    const tok = pick(props, MAX_TOKEN_KEYS);
+    if (tok) input[tok] = 4096;
+    if ("temperature" in props) input.temperature = auto ? 0.9 : 0.4;
+    if ("thinking_level" in props) input.thinking_level = "low";
+    if ("reasoning_effort" in props) input.reasoning_effort = "low";
+  } else {
+    [sysKey, imgKey, imgArray] = PLANNER_GUESSES[model] || ["system_prompt", "image", false];
+  }
+  if (sysKey) input[sysKey] = PLANNER_SYSTEM;
+  else input.prompt = `${PLANNER_SYSTEM}\n\n${prompt}`;
+  input[imgKey] = imgArray ? frames : frames[0];
+  return input;
+}
+
+async function makePlan(info, frames, description, budget) {
+  const auto = !description;
+  const orientation = info.height > info.width ? "portrait" : "landscape";
+  const prompt = `Clip: ${info.duration.toFixed(1)} s, ${info.width}x${info.height} (${orientation}).\n` +
+    `Request: ${auto ? "AUTOMATIC" : description}\n` +
+    "The attached images are frames from the clip; the first one is the keyframe.";
+  let raw = null;
+  for (const model of PLANNER_MODELS) {
+    try {
+      const [props] = await getSchema(model);
+      const input = plannerInput(model, props, prompt, frames, auto);
+      if (!input) continue;
+      raw = parsePlanJson(outputText(await runModel(model, input, "Planning")));
+      raw.planner = model;
+      break;
+    } catch (err) {
+      if (isFatal(err)) throw err;
+      log(`  Planner ${model} didn't work (${short(err)}), so the next one is tried`);
+    }
+  }
+  if (!raw) { log("  No AI planner worked, so a built-in plan is used"); raw = fallbackPlan(description); }
+  return normalisePlan(raw, info.duration, budget, description);
+}
+
+async function makeLook(keyframeUrl, instruction, photoreal, attempt) {
+  let prompt = keyframePrompt(instruction, photoreal);
+  if (attempt > 1) prompt += `\n(Take ${attempt}: a fresh interpretation of the same idea.)`;
+  let lastErr = null;
+  for (const model of IMAGE_EDIT_MODELS) {
+    const [props] = await getSchema(model);
+    const key = props ? pick(props, IMAGE_KEYS) : "image_input";
+    if (!key) continue;
+    const arr = props ? isArray(props[key]) : true;
+    const input = { prompt, aspect_ratio: "match_input_image", output_format: "png", [key]: arr ? [keyframeUrl] : keyframeUrl };
+    if (props) {
+      input.resolution = "2K";
+      if ("seed" in props) input.seed = Math.floor(Math.random() * 2e9) + 1;
+    }
+    try {
+      const url = outputUrl(await runModel(model, input, "Creating the new look"));
+      if (!url) throw new Error("no image came back");
+      return { url, model };
+    } catch (err) {
+      if (isFatal(err)) throw err;
+      lastErr = err;
+      log(`  ${model} didn't work (${short(err)})`);
+    }
+  }
+  throw new Error(`Couldn't create the new look: ${short(lastErr)}`);
+}
+
+async function videoUrlOnReplicate() {
+  const f = state.file;
+  return uploadBlob(f, f.name, `${f.name}:${f.size}:${f.lastModified}`);
+}
+
+async function animate(lookUrl, res, budget) {
+  const input = { video: await videoUrlOnReplicate(), image: lookUrl, instruction_prompt: ANIMATE_NOTE,
+    resolution: res, save_audio: true, turbo: !!budget };
+  return outputUrl(await runModel(ANIMATE_MODEL, input, "Animating with your motion"));
+}
+
+async function editVideo(instruction, res) {
+  const input = { video: await videoUrlOnReplicate(), prompt: instruction, resolution: res,
+    aspect_ratio: "auto", audio_setting: "origin" };
+  return outputUrl(await runModel(VIDEOEDIT_MODEL, input, "Editing the video"));
+}
+
+async function restyleVideo(instruction, strength) {
+  const [props] = await getSchema(RESTYLE_MODEL);
+  const videoKey = (props ? pick(props, ["video", "video_url", "input_video"]) : "video") || "video";
+  const input = { prompt: instruction, [videoKey]: await videoUrlOnReplicate() };
+  if (props && props.mode && props.mode.enum) {
+    const mode = chooseEnum(props.mode.enum, strength);
+    if (mode) input.mode = mode;
+  }
+  const url = outputUrl(await runModel(RESTYLE_MODEL, input, "Restyling the video"));
+  log("  Luma may return a silent clip. The Python version re-attaches your audio with ffmpeg.");
+  return url;
+}
+
+/* ------------------------------------------------------------------ *
+ * UI
+ * ------------------------------------------------------------------ */
+function refreshButtons() {
+  const ready = !!(state.file && state.info);
+  els.planBtn.disabled = state.busy || !ready;
+  els.genBtn.disabled = state.busy || !state.plan;
+  els.cancelBtn.disabled = !state.busy;
+  els.pipeline.disabled = state.busy || !state.plan;
+  els.instruction.disabled = state.busy || !state.plan;
+  els.fileBtn.classList.toggle("disabled", state.busy);
+  els.file.disabled = state.busy;
+}
+
+function setBusy(busy) {
+  state.busy = busy;
+  if (busy) state.cancel = false;
+  refreshButtons();
+}
+
+function currentPipeline() { return els.pipeline.value || (state.plan ? state.plan.pipeline : "recast"); }
+function currentRes() { return document.querySelector('input[name="res"]:checked').value; }
+function description() {
+  return document.querySelector('input[name="mode"]:checked').value === "describe" ? els.desc.value.trim() : "";
+}
+
+function fillPipelineSelect() {
+  els.pipeline.innerHTML = "";
+  for (const [key, spec] of Object.entries(PIPELINES)) {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = spec.label;
+    els.pipeline.append(opt);
+  }
+}
+
+function refreshCost() {
+  if (!state.plan || !state.info) return;
+  const pipe = currentPipeline(), res = currentRes();
+  const cost = estimateCost(pipe, state.info.duration, res);
+  els.planCost.innerHTML = "";
+  const tag = document.createElement("span");
+  tag.className = "estimate";
+  tag.textContent = `about ${money(cost)}`;
+  const rest = document.createElement("span");
+  rest.textContent = ` for this ${fmtTime(state.info.duration)} clip at ${res}` +
+    (pipe === "recast" ? ". Each extra look you ask for adds about $0.15." : ".");
+  els.planCost.append(tag, rest);
+}
+
+function showPlan(plan) {
+  state.plan = plan;
+  els.planScenario.textContent = plan.scenario;
+  els.pipeline.value = plan.pipeline;
+  els.planModels.textContent = `Models: ${PIPELINES[plan.pipeline].models}`;
+  const why = [plan.why, ...plan.notes].filter(Boolean).join(" ");
+  els.planWhy.textContent = `${why}${why ? " " : ""}Planned by ${plan.planner}.`;
+  els.instruction.value = plan.instruction;
+  refreshCost();
+}
+
+function resetPlan() {
+  state.plan = null;
+  els.planScenario.innerHTML = '<span class="placeholder">Plan the shot and the AI writes the scenario and picks the models.</span>';
+  els.planModels.textContent = "";
+  els.planWhy.textContent = "";
+  els.instruction.value = "";
+  els.planCost.innerHTML = '<span class="placeholder">Shown after planning.</span>';
+}
+
+function showNewEmpty() {
+  els.newScreen.classList.add("greenscreen");
+  els.newEmpty.hidden = false;
+  els.newImg.hidden = true;
+  els.result.hidden = true;
+  els.result.removeAttribute("src");
+  els.resultActions.hidden = true;
+  els.newTitle.textContent = "New look";
+  els.newModel.textContent = "";
+}
+
+function showLook(url, model) {
+  els.newScreen.classList.remove("greenscreen");
+  els.newEmpty.hidden = true;
+  els.result.hidden = true;
+  els.newImg.src = url;
+  els.newImg.hidden = false;
+  els.newTitle.textContent = "New look";
+  els.newModel.textContent = model;
+}
+
+function showResult(url, model) {
+  els.newScreen.classList.remove("greenscreen");
+  els.newEmpty.hidden = true;
+  els.newImg.hidden = true;
+  els.result.src = url;
+  els.result.hidden = false;
+  els.newTitle.textContent = "Result";
+  els.newModel.textContent = model || "";
+  els.resultActions.hidden = false;
+  els.lookBtn.hidden = !state.lookUrl;
+}
+
+function setWorking(on) { els.newScreen.classList.toggle("working", on); }
+
+function askApproval(animateCost) {
+  els.approveYes.textContent = `Animate it (about ${money(animateCost)})`;
+  els.approve.hidden = false;
+  els.approveYes.focus();
+  return new Promise((resolve) => { state.approveResolver = resolve; });
+}
+function answerApproval(answer) {
+  els.approve.hidden = true;
+  const r = state.approveResolver;
+  state.approveResolver = null;
+  if (r) r(answer);
+}
+
+async function loadFile(file) {
+  if (!file) return;
+  setStatus("Loading video...");
+  showNewEmpty();
+  resetPlan();
+  state.info = null;
+  state.lookUrl = state.outputUrl = null;
+  if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
+  state.file = file;
+  state.objectUrl = URL.createObjectURL(file);
+  const v = els.orig;
+  v.hidden = false;
+  els.origEmpty.hidden = true;
+  v.muted = true;
+  v.src = state.objectUrl;
+  state.cap = document.createElement("video");
+  state.cap.muted = true;
+  state.cap.preload = "auto";
+  state.cap.playsInline = true;
+  state.cap.src = state.objectUrl;
+  try {
+    await Promise.all([waitFor(v, "loadedmetadata"), waitFor(state.cap, "loadeddata")]);
+    if (!v.videoWidth) throw new Error("This file has no picture this browser can show. Try an H.264 MP4.");
+    state.info = { duration: v.duration || 0, width: v.videoWidth, height: v.videoHeight, sizeMB: file.size / 1e6 };
+  } catch (err) {
+    state.file = null;
+    v.hidden = true;
+    els.origEmpty.hidden = false;
+    setStatus(friendlyError(err), true);
+    log(friendlyError(err), true);
+    refreshButtons();
+    return;
+  }
+  const i = state.info;
+  els.fileInfo.textContent = `${file.name}: ${fmtTime(i.duration)}, ${i.width} × ${i.height}, ${i.sizeMB.toFixed(1)} MB`;
+  if (i.sizeMB > 100) log("Files over about 100 MB can fail to upload. Trim or compress it if that happens.");
+  if (i.duration > 30) log("Clips over 30 s cost more, and only the Recast pipeline takes them.");
+  els.scrub.max = Math.max(i.duration - 0.05, 0.01);
+  els.scrub.disabled = false;
+  setStatus("Finding a sharp keyframe...");
+  const t = await pickKeyframeTime(i.duration);
+  els.scrub.value = t;
+  await seek(v, t);
+  updateKeyLabel();
+  setStatus("Video loaded. Drag the slider to pick a clear pose, then plan the shot.");
+  refreshButtons();
+}
+
+function updateKeyLabel() {
+  els.keyTime.textContent = `Keyframe at ${Number(els.scrub.value).toFixed(1)} s`;
+  els.scrubHint.textContent = "Drag to pick a clear, front-facing pose. The new look is built from this frame.";
+}
+
+async function onPlan() {
+  if (!state.info) return;
+  if (!els.key.value.trim()) { setStatus("Paste your Replicate API key first.", true); els.key.focus(); return; }
+  const desc = description();
+  if (document.querySelector('input[name="mode"]:checked').value === "describe" && !desc) {
+    setStatus("Describe the output you want, or switch to Automatic.", true); els.desc.focus(); return;
+  }
+  saveKeyPreference();
+  setBusy(true);
+  log(`Planning (${desc ? "your description" : "automatic"})`);
+  try {
+    setStatus("Reading frames...");
+    const t = Number(els.scrub.value), d = state.info.duration;
+    const frames = [];
+    for (const s of [t, d * 0.25, d * 0.75]) frames.push(await blobToDataUrl(await captureFrame(s, 768, 0.85)));
+    const plan = await makePlan(state.info, frames, desc, els.budget.checked);
+    addSpend(PRICE.planner);
+    showPlan(plan);
+    log(`Scenario: ${plan.scenario}`);
+    log(`Pipeline: ${PIPELINES[plan.pipeline].label} (${PIPELINES[plan.pipeline].models})`);
+    plan.notes.forEach((n) => log(`Note: ${n}`));
+    setStatus("Plan ready. Edit the instruction if you like, then generate.");
+  } catch (err) {
+    setStatus(friendlyError(err), !(err instanceof Cancelled));
+    log(friendlyError(err), !(err instanceof Cancelled));
+  } finally {
+    setBusy(false);
+  }
+}
+
+function outputName() {
+  const stem = state.file.name.replace(/\.[^.]+$/, "");
+  const d = new Date(), p = (n) => String(n).padStart(2, "0");
+  return `${stem}_recast_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+
+async function onGenerate() {
+  if (!state.plan || !state.info) return;
+  if (!els.key.value.trim()) { setStatus("Paste your Replicate API key first.", true); els.key.focus(); return; }
+  saveKeyPreference();
+  let pipe = currentPipeline();
+  const budget = els.budget.checked, res = currentRes();
+  if (budget && pipe !== "recast") { pipe = "recast"; log("Budget mode is on, so Recast is used."); }
+  const instruction = els.instruction.value.trim() || state.plan.instruction;
+  const duration = state.info.duration;
+  state.outName = outputName();
+  state.outputUrl = null;
+  setBusy(true);
+  setWorking(true);
+  els.resultActions.hidden = true;
+  log(`Generating: ${PIPELINES[pipe].label}`);
+  try {
+    let url;
+    if (pipe === "recast") {
+      const keyBlob = await captureFrame(Number(els.scrub.value), 2048, 0.92);
+      const keyUrl = await uploadBlob(keyBlob, `${state.outName}_keyframe.jpg`);
+      for (let attempt = 1; ; attempt++) {
+        const look = await makeLook(keyUrl, instruction, state.plan.photoreal, attempt);
+        addSpend(PRICE.imageEdit);
+        state.lookUrl = look.url;
+        showLook(look.url, look.model);
+        if (!els.approveFirst.checked) break;
+        setWorking(false);
+        setStatus("Check the new look, then animate it or ask for another.");
+        const answer = await askApproval(PRICE.animate[res] * duration);
+        setWorking(true);
+        if (answer === "animate") break;
+        if (answer === "stop") throw new Cancelled();
+        log("Trying another look");
+      }
+      url = await animate(state.lookUrl, res, budget);
+      addSpend(PRICE.animate[res] * duration);
+    } else if (pipe === "edit") {
+      url = await editVideo(instruction, res);
+      addSpend(PRICE.videoedit[res] * Math.min(duration, 10));
+    } else {
+      url = await restyleVideo(instruction, state.plan.restyleStrength);
+      addSpend(PRICE.restyle[res] * duration);
+    }
+    if (!url) throw new Error("The model didn't return a video.");
+    state.outputUrl = url;
+    showResult(url, { recast: ANIMATE_MODEL, edit: VIDEOEDIT_MODEL, restyle: RESTYLE_MODEL }[pipe]);
+    log(`Done. Use Download video to save ${state.outName}.mp4`);
+    setStatus("Done. Play both to compare, or download the video.");
+  } catch (err) {
+    setStatus(friendlyError(err), !(err instanceof Cancelled));
+    log(friendlyError(err), !(err instanceof Cancelled));
+  } finally {
+    els.approve.hidden = true;
+    state.approveResolver = null;
+    setWorking(false);
+    setBusy(false);
+  }
+}
+
+function onCancel() {
+  state.cancel = true;
+  setStatus("Cancelling...");
+  if (state.approveResolver) answerApproval("stop");
+}
+
+async function saveUrl(url, filename) {
+  setStatus(`Downloading ${filename}...`);
+  try {
+    const src = url.startsWith("data:") ? url : `${relayBase()}/download?url=${encodeURIComponent(url)}`;
+    const res = await fetch(src);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    setStatus(`Saved ${filename} to your downloads.`);
+  } catch (err) {
+    log(`Couldn't download through the relay (${short(err)}). Opening the file in a new tab instead.`, true);
+    window.open(url, "_blank", "noopener");
+  }
+}
+
+function extFromUrl(url, fallback) {
+  if (url.startsWith("data:")) {
+    const mime = url.slice(5, url.indexOf(";"));
+    return { "image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "video/mp4": ".mp4", "video/webm": ".webm" }[mime] || fallback;
+  }
+  const m = url.split("?")[0].match(/\.(png|jpe?g|webp|mp4|mov|webm)$/i);
+  return m ? `.${m[1].toLowerCase()}` : fallback;
+}
+
+async function playBoth() {
+  const a = els.orig, b = els.result;
+  a.muted = true;
+  a.pause(); b.pause();
+  a.currentTime = 0; b.currentTime = 0;
+  try { await Promise.all([a.play(), b.play()]); } catch { /* autoplay rules */ }
+}
+
+function saveKeyPreference() {
+  store.set("recast.key", els.remember.checked ? els.key.value.trim() : null);
+  store.set("recast.remember", els.remember.checked ? "1" : null);
+}
+
+async function checkRelay() {
+  let ok = false;
+  try {
+    const res = await fetch(`${relayBase()}/health`, { cache: "no-store" });
+    ok = res.ok;
+  } catch { /* unreachable or blocked */ }
+  els.banner.textContent = ok ? "" : relayHelp();
+  els.banner.hidden = ok;
+}
+
+/* Wire up */
+fillPipelineSelect();
+els.relayUrl.value = store.get("recast.relay") || "";
+if (store.get("recast.remember")) { els.remember.checked = true; els.key.value = store.get("recast.key") || ""; }
+
+els.showKey.addEventListener("click", () => {
+  const show = els.key.type === "password";
+  els.key.type = show ? "text" : "password";
+  els.showKey.textContent = show ? "Hide" : "Show";
+});
+els.remember.addEventListener("change", saveKeyPreference);
+els.fileBtn.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!state.busy) els.file.click(); } });
+els.file.addEventListener("change", () => loadFile(els.file.files[0]));
+els.scrub.addEventListener("input", () => { els.orig.pause(); els.orig.currentTime = Number(els.scrub.value); updateKeyLabel(); });
+document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener("change", () => {
+  const describe = document.querySelector('input[name="mode"]:checked').value === "describe";
+  els.desc.disabled = !describe;
+  if (describe) els.desc.focus();
+}));
+document.querySelectorAll('input[name="res"]').forEach((r) => r.addEventListener("change", refreshCost));
+els.pipeline.addEventListener("change", () => {
+  if (!state.plan) return;
+  const [allowed, note] = guardPipeline(els.pipeline.value, state.info.duration);
+  if (note) { els.pipeline.value = allowed; setStatus(note, true); log(note); }
+  els.planModels.textContent = `Models: ${PIPELINES[allowed].models}`;
+  refreshCost();
+});
+els.planBtn.addEventListener("click", onPlan);
+els.genBtn.addEventListener("click", onGenerate);
+els.cancelBtn.addEventListener("click", onCancel);
+els.approveYes.addEventListener("click", () => answerApproval("animate"));
+els.approveRetry.addEventListener("click", () => answerApproval("retry"));
+els.approveStop.addEventListener("click", () => answerApproval("stop"));
+els.downloadBtn.addEventListener("click", () => state.outputUrl && saveUrl(state.outputUrl, state.outName + extFromUrl(state.outputUrl, ".mp4")));
+els.lookBtn.addEventListener("click", () => state.lookUrl && saveUrl(state.lookUrl, `${state.outName}_look${extFromUrl(state.lookUrl, ".png")}`));
+els.compareBtn.addEventListener("click", playBoth);
+els.relaySave.addEventListener("click", () => {
+  store.set("recast.relay", els.relayUrl.value.trim() || null);
+  state.schemas.clear();
+  checkRelay();
+  setStatus("Relay address saved.");
+});
+refreshButtons();
+checkRelay();
+</script>
+</body>
+</html>

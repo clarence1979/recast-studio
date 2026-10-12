@@ -817,7 +817,7 @@ const els = {
   key: $("#key"), showKey: $("#showKey"), remember: $("#rememberKey"), banner: $("#relayBanner"),
   file: $("#file"), fileBtn: $("#fileBtn"), fileInfo: $("#fileInfo"),
   recBtn: $("#recBtn"), recStart: $("#recStart"), recStop: $("#recStop"), recCancel: $("#recCancel"),
-  ruleLength: $("#ruleLength"), ruleSize: $("#ruleSize"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"),
+  ruleLength: $("#ruleLength"), ruleSize: $("#ruleSize"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"), ruleFormat: $("#ruleFormat"),
   origScreen: $("#origScreen"), camTip: $("#camTip"), countdown: $("#countdown"), recPill: $("#recPill"),
   recTime: $("#recTime"), recBar: $("#recBar"), recFill: $("#recFill"), recMin: $("#recMin"), dropHint: $("#dropHint"),
   orig: $("#orig"), origEmpty: $("#origEmpty"), scrub: $("#scrub"), keyTime: $("#keyTime"), scrubHint: $("#scrubHint"),
@@ -839,7 +839,7 @@ const state = {
   rec: { mode: "off", stream: null, recorder: null, started: 0, elapsed: 0, timer: null, discard: false },
   busy: false, cancel: false, approveResolver: null,
   schemas: new Map(), uploads: new Map(),
-  spend: 0, lookUrl: null, outputUrl: null, outName: null,
+  spend: 0, lookUrl: null, lookMeta: null, outputUrl: null, outName: null, conformed: null, fpsRefused: false,
 };
 
 class Cancelled extends Error { constructor() { super("Cancelled"); this.name = "Cancelled"; } }
@@ -1101,6 +1101,8 @@ function friendlyError(err) {
   if (err && err.status === 401) return "Replicate rejected the API key. Check it at replicate.com, under Account, API tokens.";
   if (err && err.status === 402) return "Replicate says your account needs billing set up or more credit.";
   if (err && err.status === 429) return "Replicate is rate-limiting requests. Wait a minute, then try again.";
+  const need = frameRateNeeded(err);
+  if (need) return `${short(err, 300)} This model needs ${need} fps or more. Re-export the clip at ${CONFORM_FPS} fps (a camera app's video settings, or a free converter) and load it again.`;
   return short(err, 500);
 }
 const isFatal = (err) => err instanceof Cancelled || (err && (err.network || [401, 402].includes(err.status)));
@@ -1332,42 +1334,74 @@ async function makeLook(keyframeUrl, basePrompt, attempt, label = "Creating the 
   throw new Error(`${label} didn't work: ${short(lastErr)}`);
 }
 
-async function videoUrlOnReplicate() {
-  const f = state.file;
-  return uploadBlob(f, f.name, `${f.name}:${f.size}:${f.lastModified}`);
+const uploadKey = (f) => `${f.name}:${f.size}:${f.lastModified}`;
+
+/* The clip's link on Replicate. A model that needs a minimum frame rate gets the 30 fps
+   conversion when the clip is known to be slower (or when `force` says a model refused it). */
+async function videoUrlOnReplicate(minFps = 0, force = false) {
+  const fps = state.info ? state.info.fps : null;
+  const slow = fps !== null && fps < minFps;
+  if (force || (minFps && (slow || state.fpsRefused))) {
+    if (!force && slow) log(`  Your clip is ${Math.round(fps)} fps and this model needs at least ${minFps}, so it's converted to ${CONFORM_FPS} fps first.`);
+    const f = await conformVideo((p) => setStatus(`Converting the clip to ${CONFORM_FPS} fps: ${Math.round(p * 100)}%. Keep this tab open and in front.`));
+    return uploadBlob(f, f.name, uploadKey(f));
+  }
+  return uploadBlob(state.file, state.file.name, uploadKey(state.file));
+}
+
+/* "Video frame rate must be >= 16fps" and similar messages, from any model. */
+function frameRateNeeded(err) {
+  const m = String(err && err.message || err || "").match(/frame\s*rate[^0-9]*(?:>=|at least|minimum(?: of)?|above|over)?\s*(\d+(?:\.\d+)?)\s*fps/i);
+  return m ? Number(m[1]) : null;
+}
+
+/* Run a video model; if it refuses the clip's frame rate, convert the clip and try once more. */
+async function runOnVideo(model, label, build, minFps = 0) {
+  let url = await videoUrlOnReplicate(minFps);
+  try {
+    return outputUrl(await runModel(model, build(url), label));
+  } catch (err) {
+    const need = frameRateNeeded(err);
+    const alreadyConverted = state.conformed && state.uploads.get(uploadKey(state.conformed)) === url;
+    if (!need || alreadyConverted) throw err;
+    log(`  ${model} needs at least ${need} fps. Converting your clip to ${CONFORM_FPS} fps and trying again.`);
+    url = await videoUrlOnReplicate(need, true);
+    state.fpsRefused = true;
+    return outputUrl(await runModel(model, build(url), `${label} (converted clip)`));
+  }
 }
 
 async function animate(lookUrl, res, budget) {
-  const input = { video: await videoUrlOnReplicate(), image: lookUrl, instruction_prompt: ANIMATE_NOTE,
-    resolution: res, save_audio: true, turbo: !!budget };
-  return outputUrl(await runModel(ANIMATE_MODEL, input, "Animating with your motion"));
+  return runOnVideo(ANIMATE_MODEL, "Animating with your motion", (video) => ({
+    video, image: lookUrl, instruction_prompt: ANIMATE_NOTE, resolution: res, save_audio: true, turbo: !!budget }));
 }
 
 async function editVideo(instruction, res) {
-  const input = { video: await videoUrlOnReplicate(), prompt: instruction, resolution: res,
-    aspect_ratio: "auto", audio_setting: "origin" };
-  return outputUrl(await runModel(VIDEOEDIT_MODEL, input, "Editing the video"));
+  return runOnVideo(VIDEOEDIT_MODEL, "Editing the video", (video) => ({
+    video, prompt: instruction, resolution: res, aspect_ratio: "auto", audio_setting: "origin" }), WAN_MIN_FPS);
 }
 
 async function restyleVideo(instruction, strength) {
   const [props] = await getSchema(RESTYLE_MODEL);
   const videoKey = (props ? pick(props, ["video", "video_url", "input_video"]) : "video") || "video";
-  const input = { prompt: instruction, [videoKey]: await videoUrlOnReplicate() };
-  if (props && props.mode && props.mode.enum) {
-    const mode = chooseEnum(props.mode.enum, strength);
-    if (mode) input.mode = mode;
-  }
-  const url = outputUrl(await runModel(RESTYLE_MODEL, input, "Restyling the video"));
+  const url = await runOnVideo(RESTYLE_MODEL, "Restyling the video", (video) => {
+    const input = { prompt: instruction, [videoKey]: video };
+    if (props && props.mode && props.mode.enum) {
+      const mode = chooseEnum(props.mode.enum, strength);
+      if (mode) input.mode = mode;
+    }
+    return input;
+  });
   log("  Luma may return a silent clip. The Python version re-attaches your audio with ffmpeg.");
   return url;
 }
 
 async function blendVideo(focus, change, referenceUrl, res) {
-  const input = { video: await videoUrlOnReplicate(), prompt: blendPrompt(focus, change), reference_image: referenceUrl,
-    resolution: res, aspect_ratio: "auto", audio_setting: "origin" };
   const label = { background: "Swapping the background", outfit: "Changing the outfit",
     both: "Changing the outfit and background" }[focus] || "Editing the video";
-  return outputUrl(await runModel(VIDEOEDIT_MODEL, input, label));
+  return runOnVideo(VIDEOEDIT_MODEL, label, (video) => ({
+    video, prompt: blendPrompt(focus, change), reference_image: referenceUrl,
+    resolution: res, aspect_ratio: "auto", audio_setting: "origin" }), WAN_MIN_FPS);
 }
 
 /* Two runs of the matting model: the green-screen video, then its exact transparency mask so soft
@@ -1648,14 +1682,21 @@ async function compositeCutout(greenUrl, alphaUrl, plateUrl, onProgress) {
     running = true;
     let loop;
     if (mask && rvfc) {
-      // Two videos: only draw when both show the same frame, and nudge the mask video to keep it in step.
+      // Two videos: each frame is copied the moment it is presented, and a copy of the person is only
+      // composited with a mask copy from the same instant. Reading the elements later would risk pairing
+      // a person frame with a mask frame from a different moment, which leaves a green halo.
+      const gc = document.createElement("canvas"), acv = document.createElement("canvas");
+      gc.width = gv.videoWidth; gc.height = gv.videoHeight;
+      acv.width = av.videoWidth || gv.videoWidth; acv.height = av.videoHeight || gv.videoHeight;
+      const gctx = gc.getContext("2d"), actx = acv.getContext("2d");
       let gT = -1, aT = -1, prevG = -1, drawnT = -1, step = 1 / 30;
       const watchG = (_, md) => {
         if (prevG >= 0 && md.mediaTime > prevG) step = Math.min(step, md.mediaTime - prevG);
+        gctx.drawImage(gv, 0, 0);
         prevG = gT = md.mediaTime;
         if (running) gv.requestVideoFrameCallback(watchG);
       };
-      const watchA = (_, md) => { aT = md.mediaTime; if (running) av.requestVideoFrameCallback(watchA); };
+      const watchA = (_, md) => { actx.drawImage(av, 0, 0); aT = md.mediaTime; if (running) av.requestVideoFrameCallback(watchA); };
       gv.requestVideoFrameCallback(watchG);
       av.requestVideoFrameCallback(watchA);
       loop = () => {
@@ -1663,7 +1704,7 @@ async function compositeCutout(greenUrl, alphaUrl, plateUrl, onProgress) {
         const tol = step / 2;
         if (gT >= 0 && aT >= 0) {
           if (gT !== drawnT && Math.abs(gT - aT) < tol) {
-            comp.draw(gv, av);
+            comp.draw(gc, acv);
             drawnT = gT;
             onProgress(Math.min(1, gv.currentTime / (gv.duration || 1)));
           }
@@ -1738,7 +1779,7 @@ function refreshButtons() {
   els.genBtn.disabled = state.busy || !state.plan || camera;
   els.cancelBtn.disabled = !state.busy;
   els.pipeline.disabled = state.busy || !state.plan;
-  els.instruction.disabled = state.busy || !state.plan;
+  els.instruction.disabled = (state.busy && !state.approveResolver) || !state.plan;
   els.recBtn.disabled = state.busy;
   els.fileBtn.classList.toggle("disabled", state.busy);
   els.fileBtn.setAttribute("aria-disabled", String(state.busy));
@@ -1880,13 +1921,26 @@ function askApproval(nextCost, kind = "look", verb = "Animate it") {
   els.approveRetry.textContent = bg ? "Try another background" : "Try another look";
   els.approve.hidden = false;
   els.approveYes.focus();
-  return new Promise((resolve) => { state.approveResolver = resolve; });
+  return new Promise((resolve) => { state.approveResolver = resolve; refreshButtons(); });
 }
 function answerApproval(answer) {
   els.approve.hidden = true;
   const r = state.approveResolver;
   state.approveResolver = null;
+  refreshButtons();
   if (r) r(answer);
+}
+const currentInstruction = () => els.instruction.value.trim() || (state.plan ? state.plan.instruction : "");
+
+/* A plan is stale once the description or the choice it was made from changes. */
+function planIsStale() {
+  if (!state.plan) return false;
+  const describe = document.querySelector('input[name="mode"]:checked').value === "describe";
+  return (describe ? els.desc.value.trim() : "") !== (state.plan.description || "");
+}
+function notePlanFreshness() {
+  if (!state.plan || state.busy) return;
+  if (planIsStale()) setStatus("Your description changed. Generate plans the shot again with it first, or press Plan the shot now.");
 }
 
 function showSourceMessage(text, isError = false) {
@@ -1928,7 +1982,7 @@ function resolveDuration(v, hint) {
   });
 }
 
-async function probeVideo(url, hint) {
+async function probeVideo(url, hint, file) {
   const v = document.createElement("video");
   v.muted = true;
   v.preload = "auto";
@@ -1938,7 +1992,182 @@ async function probeVideo(url, hint) {
   let duration = v.duration;
   if (!Number.isFinite(duration) || duration <= 0) duration = await resolveDuration(v, hint);
   if (v.readyState < 2) await waitFor(v, "loadeddata").catch(() => {});
-  return { el: v, duration, width: v.videoWidth, height: v.videoHeight };
+  let fps = null;
+  if (file && duration > 0) {
+    try {
+      const frames = await mp4FrameCount(file);
+      if (frames > 0) fps = frames / duration;
+    } catch { fps = null; }
+    if (fps === null) fps = await estimateFps(url, duration).catch(() => null);
+  }
+  return { el: v, duration, width: v.videoWidth, height: v.videoHeight, fps };
+}
+
+/* ------------------------------------------------------------------ *
+ * Frame rate. Some models refuse clips under 16 fps, and webcams in dim
+ * rooms often record at 15. MP4 and MOV files say how many frames they
+ * hold; other files are measured by playing a little of them.
+ * ------------------------------------------------------------------ */
+const WAN_MIN_FPS = 16;
+const CONFORM_FPS = 30;
+
+async function mp4FrameCount(file) {
+  const readBox = async (off, size) => new DataView(await file.slice(off, off + size).arrayBuffer());
+  const type = (dv, p) => String.fromCharCode(dv.getUint8(p), dv.getUint8(p + 1), dv.getUint8(p + 2), dv.getUint8(p + 3));
+  const children = (dv, start, end, skip = 0) => {
+    const out = [];
+    for (let p = start; p + 8 <= end;) {
+      let size = dv.getUint32(p), hdr = 8;
+      if (size === 1) { size = Number(dv.getBigUint64(p + 8)); hdr = 16; }
+      else if (size === 0) size = end - p;
+      if (size < hdr) break;
+      out.push({ type: type(dv, p + 4), start: p + hdr + skip, end: Math.min(end, p + size) });
+      p += size;
+    }
+    return out;
+  };
+  const find = (dv, box, name) => children(dv, box.start, box.end).find((b) => b.type === name);
+  let videoTrack = null, stts = 0, trun = 0;
+  for (let off = 0; off + 8 <= file.size;) {
+    const head = await readBox(off, Math.min(16, file.size - off));
+    let size = head.getUint32(0), hdr = 8;
+    if (size === 1) { size = Number(head.getBigUint64(8)); hdr = 16; }
+    else if (size === 0) size = file.size - off;
+    if (size < hdr) break;
+    const name = type(head, 4);
+    if (name === "moov" || name === "moof") {
+      const dv = await readBox(off, size);
+      const box = { start: hdr, end: size };
+      if (name === "moov") {
+        for (const trak of children(dv, box.start, box.end).filter((b) => b.type === "trak")) {
+          const mdia = find(dv, trak, "mdia");
+          if (!mdia) continue;
+          const hdlr = find(dv, mdia, "hdlr");
+          if (!hdlr || type(dv, hdlr.start + 8) !== "vide") continue;
+          const tkhd = find(dv, trak, "tkhd");
+          if (tkhd) videoTrack = dv.getUint32(tkhd.start + (dv.getUint8(tkhd.start) === 1 ? 20 : 12));
+          const minf = find(dv, mdia, "minf"), stbl = minf && find(dv, minf, "stbl"), st = stbl && find(dv, stbl, "stts");
+          if (st) {
+            const n = dv.getUint32(st.start + 4);
+            for (let i = 0; i < n; i++) stts += dv.getUint32(st.start + 8 + i * 8);
+          }
+        }
+      } else {
+        for (const traf of children(dv, box.start, box.end).filter((b) => b.type === "traf")) {
+          const tfhd = find(dv, traf, "tfhd");
+          if (!tfhd || (videoTrack !== null && dv.getUint32(tfhd.start + 4) !== videoTrack)) continue;
+          for (const tr of children(dv, traf.start, traf.end).filter((b) => b.type === "trun")) trun += dv.getUint32(tr.start + 4);
+        }
+      }
+    }
+    off += size;
+  }
+  return stts || trun;
+}
+
+function estimateFps(url, duration) {
+  return new Promise((resolve) => {
+    const v = document.createElement("video");
+    if (!("getVideoPlaybackQuality" in v)) return resolve(null);
+    v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = url;
+    const done = (value) => { v.pause(); v.removeAttribute("src"); resolve(value); };
+    const span = Math.min(2.5, Math.max(1, duration - 0.2));
+    v.addEventListener("error", () => done(null), { once: true });
+    v.addEventListener("loadeddata", () => {
+      const t0 = v.getVideoPlaybackQuality().totalVideoFrames;
+      const start = performance.now();
+      const check = () => {
+        if (v.currentTime >= span || v.ended) {
+          const frames = v.getVideoPlaybackQuality().totalVideoFrames - t0;
+          return done(v.currentTime > 0.5 && frames > 0 ? frames / v.currentTime : null);
+        }
+        if (performance.now() - start > 8000) return done(null);
+        requestAnimationFrame(check);
+      };
+      v.play().then(() => requestAnimationFrame(check)).catch(() => done(null));
+    }, { once: true });
+  });
+}
+
+const fpsNote = (fps) => (fps === null ? "" : `, ${Math.round(fps)} fps${fps < WAN_MIN_FPS ? " (low)" : ""}`);
+
+/* Re-record the clip at a steady 30 fps in the browser, keeping its sound. Frames are
+   repeated, not invented, so the motion is unchanged; the file just stops being "15 fps". */
+async function conformVideo(onProgress) {
+  if (state.conformed) return state.conformed;
+  if (typeof MediaRecorder === "undefined") throw new Error("This browser can't convert the clip's frame rate. Use Chrome, Edge or Safari, or export the clip at 30 fps first.");
+  const sv = document.createElement("video");
+  let ac = null, recorder = null, timer = null, onVisibility = null;
+  try {
+    sv.playsInline = true; sv.preload = "auto"; sv.src = state.objectUrl;
+    await waitFor(sv, "loadeddata", 30000);
+    const scale = Math.min(1, 1920 / Math.max(sv.videoWidth, sv.videoHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(2, Math.round((sv.videoWidth * scale) / 2) * 2);
+    canvas.height = Math.max(2, Math.round((sv.videoHeight * scale) / 2) * 2);
+    const ctx = canvas.getContext("2d");
+    let audioTracks = [];
+    try {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      const dest = ac.createMediaStreamDestination();
+      ac.createMediaElementSource(sv).connect(dest);
+      await ac.resume();
+      audioTracks = dest.stream.getAudioTracks();
+    } catch {
+      sv.muted = true;
+      log("  Couldn't carry the sound across, so the converted clip is silent.");
+    }
+    // With requestFrame() each draw becomes exactly one frame; otherwise the browser samples the canvas.
+    const manual = "CanvasCaptureMediaStreamTrack" in window && typeof CanvasCaptureMediaStreamTrack.prototype.requestFrame === "function";
+    const vTrack = canvas.captureStream(manual ? 0 : CONFORM_FPS).getVideoTracks()[0];
+    const stream = new MediaStream([vTrack, ...audioTracks]);
+    const type = pickRecordType();
+    const opts = { videoBitsPerSecond: 8_000_000 };
+    if (type) opts.mimeType = type;
+    recorder = new MediaRecorder(stream, opts);
+    const chunks = [];
+    recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    const stopped = new Promise((resolve) => { recorder.onstop = resolve; });
+    const draw = () => {
+      ctx.drawImage(sv, 0, 0, canvas.width, canvas.height);
+      if (typeof vTrack.requestFrame === "function") vTrack.requestFrame();
+      onProgress(Math.min(1, sv.currentTime / (sv.duration || 1)));
+    };
+    onVisibility = () => {
+      if (document.hidden) { sv.pause(); if (recorder.state === "recording") recorder.pause(); }
+      else { if (recorder.state === "paused") recorder.resume(); sv.play().catch(() => {}); }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    sv.currentTime = 0;
+    draw();
+    recorder.start(500);
+    timer = setInterval(draw, 1000 / CONFORM_FPS);
+    try { await sv.play(); } catch { sv.muted = true; await sv.play(); }
+    await new Promise((resolve, reject) => {
+      const watch = setInterval(() => {
+        if (state.cancel) { clearInterval(watch); reject(new Cancelled()); }
+        else if (sv.ended) { clearInterval(watch); resolve(); }
+      }, 100);
+      sv.addEventListener("error", () => { clearInterval(watch); reject(new Error("The clip couldn't be played back for conversion.")); }, { once: true });
+    });
+    clearInterval(timer); timer = null;
+    draw();
+    recorder.stop();
+    await stopped;
+    const mime = ((recorder.mimeType || type || "video/webm").split(";")[0] || "video/webm").trim();
+    const stem = state.file.name.replace(/\.[^.]+$/, "");
+    const file = new File(chunks, `${stem}_${CONFORM_FPS}fps${mime.includes("mp4") ? ".mp4" : ".webm"}`, { type: mime });
+    if (!file.size) throw new Error("The converted clip came out empty.");
+    state.conformed = file;
+    log(`  Converted to ${CONFORM_FPS} fps: ${file.name} (${(file.size / 1e6).toFixed(1)} MB)`);
+    return file;
+  } finally {
+    if (timer) clearInterval(timer);
+    if (onVisibility) document.removeEventListener("visibilitychange", onVisibility);
+    if (recorder && recorder.state !== "inactive") { try { recorder.stop(); } catch { /* already stopped */ } }
+    sv.pause(); sv.removeAttribute("src");
+    if (ac) ac.close().catch(() => {});
+  }
 }
 
 function showOriginal(mode) {
@@ -1958,7 +2187,7 @@ async function loadFile(file, opts = {}) {
   const url = URL.createObjectURL(file);
   let probe;
   try {
-    probe = await probeVideo(url, opts.hint);
+    probe = await probeVideo(url, opts.hint, file);
   } catch (err) {
     URL.revokeObjectURL(url);
     showSourceMessage(friendlyError(err), true);
@@ -1979,13 +2208,14 @@ async function loadFile(file, opts = {}) {
   // The video passed every check, so it replaces the current one.
   showNewEmpty();
   resetPlan();
-  state.lookUrl = state.outputUrl = null;
+  state.lookUrl = state.lookMeta = state.outputUrl = state.conformed = null;
+  state.fpsRefused = false;
   if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
   state.file = file;
   state.objectUrl = url;
   state.cap = probe.el;
   state.recorded = !!opts.recorded;
-  state.info = { duration: d, width: probe.width, height: probe.height, sizeMB: file.size / 1e6 };
+  state.info = { duration: d, width: probe.width, height: probe.height, sizeMB: file.size / 1e6, fps: probe.fps };
   showOriginal("video");
   els.orig.srcObject = null;
   els.orig.muted = true;
@@ -1994,7 +2224,10 @@ async function loadFile(file, opts = {}) {
 
   const i = state.info;
   const label = opts.recorded ? "Your recording" : file.name;
-  showSourceMessage(`${label}: ${fmtTime(i.duration)}, ${i.width} × ${i.height}, ${i.sizeMB.toFixed(1)} MB`);
+  showSourceMessage(`${label}: ${fmtTime(i.duration)}, ${i.width} × ${i.height}${fpsNote(i.fps)}, ${i.sizeMB.toFixed(1)} MB`);
+  if (i.fps !== null && i.fps < WAN_MIN_FPS) {
+    log(`This clip is ${Math.round(i.fps)} fps. Models that need ${WAN_MIN_FPS} fps or more get a ${CONFORM_FPS} fps copy made in your browser, which takes about as long as the clip.`);
+  }
   if (opts.recorded) {
     const save = document.createElement("button");
     save.type = "button";
@@ -2254,27 +2487,40 @@ function updateKeyLabel() {
   els.scrubHint.textContent = `Keyframe at ${t.toFixed(1)} s. Drag to pick a clear, front-facing pose; the new look is built from this frame.`;
 }
 
+function describeProblem() {
+  if (document.querySelector('input[name="mode"]:checked').value === "describe" && !description()) {
+    setStatus("Describe the output you want, or switch to Automatic.", true); els.desc.focus(); return true;
+  }
+  return false;
+}
+
+/* Reads three frames, asks the planner, and shows the plan. Used by Plan and, when the
+   description changed since the last plan, by Generate. */
+async function runPlan() {
+  const desc = description();
+  log(`Planning (${desc ? "your description" : "automatic"}; change: ${currentFocus()})`);
+  setStatus("Reading frames...");
+  const t = Number(els.scrub.value), d = state.info.duration;
+  const frames = [];
+  for (const s of [t, d * 0.25, d * 0.75]) frames.push(await blobToDataUrl(await captureFrame(s, 768, 0.85)));
+  const plan = await makePlan(state.info, frames, desc, els.budget.checked, currentFocus());
+  plan.description = desc;
+  addSpend(PRICE.planner);
+  showPlan(plan);
+  log(`Scenario: ${plan.scenario}`);
+  log(`Pipeline: ${PIPELINES[plan.pipeline].label} (${PIPELINES[plan.pipeline].models})`);
+  plan.notes.forEach((n) => log(`Note: ${n}`));
+  return plan;
+}
+
 async function onPlan() {
   if (!state.info) return;
   if (!els.key.value.trim()) { setStatus("Paste your Replicate API key first.", true); els.key.focus(); return; }
-  const desc = description();
-  if (document.querySelector('input[name="mode"]:checked').value === "describe" && !desc) {
-    setStatus("Describe the output you want, or switch to Automatic.", true); els.desc.focus(); return;
-  }
+  if (describeProblem()) return;
   saveKeyPreference();
   setBusy(true);
-  log(`Planning (${desc ? "your description" : "automatic"}; change: ${currentFocus()})`);
   try {
-    setStatus("Reading frames...");
-    const t = Number(els.scrub.value), d = state.info.duration;
-    const frames = [];
-    for (const s of [t, d * 0.25, d * 0.75]) frames.push(await blobToDataUrl(await captureFrame(s, 768, 0.85)));
-    const plan = await makePlan(state.info, frames, desc, els.budget.checked, currentFocus());
-    addSpend(PRICE.planner);
-    showPlan(plan);
-    log(`Scenario: ${plan.scenario}`);
-    log(`Pipeline: ${PIPELINES[plan.pipeline].label} (${PIPELINES[plan.pipeline].models})`);
-    plan.notes.forEach((n) => log(`Note: ${n}`));
+    await runPlan();
     setStatus("Plan ready. Edit the instruction if you like, then generate.");
   } catch (err) {
     setStatus(friendlyError(err), !(err instanceof Cancelled));
@@ -2290,48 +2536,72 @@ function outputName() {
   return `${stem}_recast_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 }
 
+/* The preview image loop shared by Recast and the keep-face pipelines. Each try reads the
+   instruction box again, so an edit made while the approval panel is open steers the next
+   image, and a look already approved for the same instruction is reused instead of paid for twice. */
+async function approvedLook(keyUrl, kind, focus, promptFor, nextCost, verb) {
+  const key = (instruction) => `${kind}|${focus}|${instruction}|${Number(els.scrub.value).toFixed(2)}`;
+  let instruction = currentInstruction(), attempt = 1, mayReuse = true;
+  for (;;) {
+    let look;
+    if (mayReuse && state.lookUrl && state.lookMeta && state.lookMeta.key === key(instruction)) {
+      look = { url: state.lookUrl, model: state.lookMeta.model };
+      log(`Reusing the ${kind} from the last try (no extra cost)`);
+    } else {
+      look = await makeLook(keyUrl, promptFor(instruction), attempt, kind === "background" ? "Creating the new background" : "Creating the new look");
+      addSpend(PRICE.imageEdit);
+      state.lookUrl = look.url;
+      state.lookMeta = { key: key(instruction), model: look.model };
+    }
+    showLook(look.url, look.model, kind === "background" ? "New background" : "New look");
+    if (!els.approveFirst.checked) return instruction;
+    setWorking(false);
+    setStatus(`Check the new ${kind}, then ${verb === "Animate it" ? "animate it" : "use it"} or ask for another. You can edit the instruction first.`);
+    const answer = await askApproval(nextCost, kind, verb);
+    setWorking(true);
+    if (answer === "animate") return currentInstruction();
+    if (answer === "stop") throw new Cancelled();
+    const edited = currentInstruction();
+    mayReuse = false;
+    if (edited !== instruction) { log(`Trying another ${kind} with your edited instruction`); instruction = edited; attempt = 1; }
+    else { log(`Trying another ${kind}`); attempt += 1; }
+  }
+}
+
 async function onGenerate() {
   if (!state.plan || !state.info) return;
   if (!els.key.value.trim()) { setStatus("Paste your Replicate API key first.", true); els.key.focus(); return; }
+  if (describeProblem()) return;
   saveKeyPreference();
-  let pipe = currentPipeline();
-  const budget = els.budget.checked, res = currentRes();
-  const focus = planFocus();
-  if (budget) {
-    const [cheap, note] = guardPipeline(pipe, state.info.duration, true, focus);
-    if (note) { pipe = cheap; log(note); }
-  }
-  const instruction = els.instruction.value.trim() || state.plan.instruction;
-  const duration = state.info.duration;
-  state.outName = outputName();
-  state.outputUrl = null;
-  state.outputExt = null;
-  const plateMode = pipe === "bgcut" || (pipe === "blend" && focus === "background");
-  state.lookKind = plateMode ? "background" : "look";
   setBusy(true);
   setWorking(true);
   els.resultActions.hidden = true;
-  log(`Generating: ${PIPELINES[pipe].label}`);
   try {
-    let url;
+    if (planIsStale()) {
+      log("Your description changed since the last plan, so the shot is planned again first.");
+      await runPlan();
+    }
+    let pipe = currentPipeline();
+    const budget = els.budget.checked, res = currentRes();
+    const focus = planFocus();
+    if (budget) {
+      const [cheap, note] = guardPipeline(pipe, state.info.duration, true, focus);
+      if (note) { pipe = cheap; log(note); }
+    }
+    const duration = state.info.duration;
+    state.outName = outputName();
+    state.outputUrl = null;
+    state.outputExt = null;
+    const plateMode = pipe === "bgcut" || (pipe === "blend" && focus === "background");
+    state.lookKind = plateMode ? "background" : "look";
+    log(`Generating: ${PIPELINES[pipe].label}`);
+    let url, instruction = currentInstruction();
     if (pipe === "recast") {
       const keyBlob = await captureFrame(Number(els.scrub.value), 2048, 0.92);
       const keyUrl = await uploadBlob(keyBlob, `${state.outName}_keyframe.jpg`);
-      for (let attempt = 1; ; attempt++) {
-        const basePrompt = focus === "all" ? keyframePrompt(instruction, state.plan.photoreal) : keepFacePrompt(focus, instruction);
-        const look = await makeLook(keyUrl, basePrompt, attempt);
-        addSpend(PRICE.imageEdit);
-        state.lookUrl = look.url;
-        showLook(look.url, look.model);
-        if (!els.approveFirst.checked) break;
-        setWorking(false);
-        setStatus("Check the new look, then animate it or ask for another.");
-        const answer = await askApproval(PRICE.animate[res] * duration);
-        setWorking(true);
-        if (answer === "animate") break;
-        if (answer === "stop") throw new Cancelled();
-        log("Trying another look");
-      }
+      instruction = await approvedLook(keyUrl, "look", focus,
+        (text) => (focus === "all" ? keyframePrompt(text, state.plan.photoreal) : keepFacePrompt(focus, text)),
+        PRICE.animate[res] * duration, "Animate it");
       url = await animate(state.lookUrl, res, budget);
       addSpend(PRICE.animate[res] * duration);
     } else if (isKeepPipe(pipe)) {
@@ -2339,23 +2609,8 @@ async function onGenerate() {
       const keyBlob = await captureFrame(Number(els.scrub.value), 2048, 0.92);
       const keyUrl = await uploadBlob(keyBlob, `${state.outName}_keyframe.jpg`);
       const nextCost = pipe === "blend" ? PRICE.videoedit[res] * Math.min(duration, 10) : PRICE.cutout;
-      const kind = plateMode ? "background" : "look";
-      for (let attempt = 1; ; attempt++) {
-        const img = plateMode
-          ? await makeLook(keyUrl, platePrompt(instruction), attempt, "Creating the new background")
-          : await makeLook(keyUrl, keepFacePrompt(focus, instruction), attempt, "Creating the new look");
-        addSpend(PRICE.imageEdit);
-        state.lookUrl = img.url;
-        showLook(img.url, img.model, plateMode ? "New background" : "New look");
-        if (!els.approveFirst.checked) break;
-        setWorking(false);
-        setStatus(`Check the new ${kind}, then use it or ask for another.`);
-        const answer = await askApproval(nextCost, kind, "Use it");
-        setWorking(true);
-        if (answer === "animate") break;
-        if (answer === "stop") throw new Cancelled();
-        log(`Trying another ${kind}`);
-      }
+      instruction = await approvedLook(keyUrl, plateMode ? "background" : "look", focus,
+        (text) => (plateMode ? platePrompt(text) : keepFacePrompt(focus, text)), nextCost, "Use it");
       if (pipe === "blend") {
         url = await blendVideo(focus, instruction, state.lookUrl, res);
         addSpend(nextCost);
@@ -2580,7 +2835,9 @@ document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListene
   const describe = document.querySelector('input[name="mode"]:checked').value === "describe";
   els.desc.disabled = !describe;
   if (describe) els.desc.focus();
+  notePlanFreshness();
 }));
+els.desc.addEventListener("change", notePlanFreshness);
 document.querySelectorAll('input[name="res"]').forEach((r) => r.addEventListener("change", refreshCost));
 els.pipeline.addEventListener("change", () => {
   if (!state.plan) return;

@@ -4,6 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Recast Studio</title>
+<meta name="application-name" content="Recast Studio">
+<meta name="apple-mobile-web-app-title" content="Recast">
+<meta name="theme-color" content="#ECEDEA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1C2022" media="(prefers-color-scheme: dark)">
+<!-- App icon, inlined: a figure across an original/green-screen split, dressed up in a bow tie. -->
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABIFBMVEVaeokVnkz9/v4AAAA3jWv0uBxvg3qSlphQt3kqMTUkpFd4x5daeohaeollg5FpvY2um022ubrAo0DGzdAxj2I6rmhaeomTqLK7yM7r7vAcoVExjGsujWUklVoqkmBCSExdY2ZFlHVggI9/mKNqqpGO0ai24cfG0szB5c8qk18wkGQtkmBaeIdYeIdbe4lboYVau4F2kZ2n27ze8uYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC54976AAAAYHRSTlP+/v8A//////////9KtP/4/////33/g/////8fL+bA////EP///////8eFrxEgcP//////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAb/GWNAAABG0lEQVR42oWT53aDMAxGJRswjRMoYaaZze5e7/9u9Qhggki+X5xzr2VZxsA53xYTIDIptgoC52MYzFgLNzh4GYf3WxxxAZ/2+5Hm+Aa2v8APSI5L+x1M/WlAcURb39dRu+wqNkt3LsdOhYqZVA6/CLaHkl1StrwWzClYk5aj01XUCiNSKFshvFfhiRQgrfkv0kJEtNAR4Gem8V+OQwJEeym/3fXXgoe93OPY5XksZZwPCc+Hkz3E6UBO8osxsU6ESNbCHWXD92qpeDAR7rCb+rq22KRJkm6EO6y6v2N7EcyM61gL5qf1QtaL3WQJhTnfuS+cjfACH5qPGBFz5wv19NT8QkrQe7zqx5shSkqQiJl53Xy+iikhXs0V/Ac+EQ4qdOv9mgAAAABJRU5ErkJggg==">
+<link rel="icon" type="image/svg+xml" sizes="any" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3CclipPath id="rs-c"%3E%3Crect width="64" height="64" rx="14"/%3E%3C/clipPath%3E%3Cg clip-path="url%28%23rs-c%29"%3E%3Crect width="64" height="64" fill="%235B7B8A"/%3E%3Cpath d="M64 0V64H0Z" fill="%23159F4C"/%3E%3Cpath d="M15 7.5l2 5.5 5.5 2-5.5 2-2 5.5-2-5.5-5.5-2 5.5-2z" fill="%23F4B81C"/%3E%3Ccircle cx="32" cy="24.5" r="10.5" fill="%23fff"/%3E%3Cpath d="M11 64c0-13.5 9.4-23 21-23s21 9.5 21 23z" fill="%23fff"/%3E%3Cpath d="M25 43.2l7 3.6-7 3.6zM39 43.2l-7 3.6 7 3.6z" fill="%232B3236"/%3E%3Ccircle cx="32" cy="46.8" r="2.2" fill="%232B3236"/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="192x192" id="icon192" href="data:image/png;base64,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">
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,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">
+<link rel="manifest" id="appManifest">
+<script>
+/* Builds the web-app manifest in the page so Chrome and Edge can install Recast Studio
+   as an app with its own taskbar / Dock icon. Nothing extra to upload. */
+(function () {
+  try {
+    var here = location.href.split("#")[0].split("?")[0];
+    var manifest = {
+      name: "Recast Studio", short_name: "Recast", description: "Turn one take into a new scene.",
+      start_url: here, scope: here.replace(/[^/]*$/, ""), display: "standalone",
+      background_color: "#ECEDEA", theme_color: "#ECEDEA",
+      icons: [
+        { src: document.getElementById("icon192").href, sizes: "192x192", type: "image/png", purpose: "any" },
+        { src: "data:image/png;base64,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", sizes: "512x512", type: "image/png", purpose: "any" }
+      ]
+    };
+    var blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+    document.getElementById("appManifest").href = URL.createObjectURL(blob);
+  } catch (e) { /* the page works without it */ }
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
@@ -19,6 +49,7 @@
   --on-chroma: #062B14;
   --tape: #F2A900;
   --danger: #B3261E;
+  --rec: #C8102E;
   --monitor: #15191B;
   --radius-s: 4px;
   --radius-m: 8px;
@@ -56,6 +87,8 @@ a { color: var(--chroma-deep); }
 
 /* Header */
 .top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px 32px; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand .logo { width: 54px; height: 54px; flex: none; }
 .brand h1 {
   margin: 0;
   font-stretch: 125%;
@@ -134,12 +167,57 @@ input[type=checkbox], input[type=radio] { accent-color: var(--chroma-deep); widt
 .scrub { width: 100%; accent-color: var(--chroma-deep); }
 .hint { margin: 0; color: var(--muted); font-size: 13px; }
 
-.filepick {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  margin-bottom: 14px;
+/* Getting a video in: record, upload or drop */
+.source { display: grid; gap: 10px; margin-bottom: 14px; }
+.source-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.source-actions input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.source-actions [hidden] { display: none !important; }
+.rules { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 22px; font-size: 14px; }
+.rules div { display: flex; gap: 6px; align-items: baseline; }
+.rules dt { color: var(--muted); }
+.rules dd { margin: 0; font-weight: 700; }
+.fileinfo { margin: 0; color: var(--muted); font-size: 14px; min-height: 1.45em; }
+.fileinfo.error { color: var(--danger); font-weight: 600; }
+.fileinfo .btn { margin-left: 8px; padding: 3px 10px; font-size: 13px; }
+.btn.rec::before {
+  content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 8px;
+  border-radius: 50%; background: var(--rec); vertical-align: 0;
 }
-.filepick input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.fileinfo { color: var(--muted); font-size: 14px; }
+.btn.stop { background: var(--rec); border-color: var(--rec); color: #fff; }
+.btn.stop:hover:not(:disabled) { background: var(--rec); filter: brightness(1.1); }
+
+/* Original monitor: drop target, camera preview and recording overlays */
+.screen.pickable { cursor: pointer; }
+.screen.dropping { outline: 3px dashed var(--chroma); outline-offset: -3px; }
+.screen video.mirror { transform: scaleX(-1); }
+.drop-hint {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--monitor) 80%, transparent);
+  color: #fff; font-weight: 700; font-size: 18px; pointer-events: none;
+}
+.countdown {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  color: #fff; font-stretch: 125%; font-weight: 800; font-size: clamp(72px, 12vw, 150px);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, .55);
+}
+.rec-pill {
+  position: absolute; top: 12px; left: 12px;
+  display: flex; align-items: center; gap: 8px; padding: 5px 11px;
+  border-radius: 999px; background: rgba(0, 0, 0, .62); color: #fff;
+  font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums;
+}
+.rec-pill .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--rec); animation: blink 1s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
+.rec-bar { position: absolute; left: 14px; right: 14px; bottom: 14px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .28); }
+.rec-bar .fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 3px; background: var(--rec); }
+.rec-bar .min { position: absolute; top: -5px; bottom: -5px; width: 2px; background: #fff; }
+.rec-bar .min span { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 12px; white-space: nowrap; text-shadow: 0 1px 4px rgba(0, 0, 0, .7); }
+.cam-tip {
+  position: absolute; left: 12px; right: 12px; bottom: 12px; margin: 0;
+  padding: 8px 10px; border-radius: var(--radius-s); background: rgba(0, 0, 0, .6);
+  color: #fff; font-size: 14px; text-align: center;
+}
+@media (prefers-reduced-motion: reduce) { .rec-pill .dot { animation: none; } }
 
 /* Approve bar */
 .approve {
@@ -221,6 +299,7 @@ details.conn input { flex: 1; min-width: 200px; }
 @media (max-width: 640px) {
   .page { padding: 16px 16px 32px; }
   .brand h1 { font-size: 28px; }
+  .brand .logo { width: 44px; height: 44px; }
   .monitors { grid-template-columns: 1fr 1fr; gap: 10px; }
   .screen { height: 46vh; min-height: 260px; }
 }
@@ -234,8 +313,11 @@ details.conn input { flex: 1; min-width: 200px; }
 
   <header class="top">
     <div class="brand">
-      <h1>Recast Studio</h1>
-      <p>Turn one take into a new scene, using models on Replicate.</p>
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><clipPath id="rs-logo-clip"><rect width="64" height="64" rx="14"/></clipPath><g clip-path="url(#rs-logo-clip)"><rect width="64" height="64" fill="#5B7B8A"/><path d="M64 0V64H0Z" fill="#159F4C"/><path d="M15 7.5l2 5.5 5.5 2-5.5 2-2 5.5-2-5.5-5.5-2 5.5-2z" fill="#F4B81C"/><circle cx="32" cy="24.5" r="10.5" fill="#fff"/><path d="M11 64c0-13.5 9.4-23 21-23s21 9.5 21 23z" fill="#fff"/><path d="M25 43.2l7 3.6-7 3.6zM39 43.2l-7 3.6 7 3.6z" fill="#2B3236"/><circle cx="32" cy="46.8" r="2.2" fill="#2B3236"/></g></svg>
+      <div>
+        <h1>Recast Studio</h1>
+        <p>Turn one take into a new scene, using models on Replicate.</p>
+      </div>
     </div>
     <div class="keybox">
       <label for="key">Replicate API key</label>
@@ -253,17 +335,33 @@ details.conn input { flex: 1; min-width: 200px; }
 
   <main class="studio">
     <div>
-      <div class="filepick">
-        <label class="btn ink" for="file" id="fileBtn" tabindex="0" role="button">Choose base video</label>
-        <input id="file" type="file" accept="video/*">
-        <span class="fileinfo" id="fileInfo">MP4 or MOV. Shorter clips cost less.</span>
+      <div class="source">
+        <div class="source-actions">
+          <button class="btn rec" id="recBtn" type="button">Record</button>
+          <label class="btn ink" for="file" id="fileBtn" tabindex="0" role="button">Upload video</label>
+          <input id="file" type="file" accept=".mp4,.mov,.m4v,video/mp4,video/quicktime">
+          <button class="btn go" id="recStart" type="button" hidden>Start recording</button>
+          <button class="btn stop" id="recStop" type="button" hidden>Stop</button>
+          <button class="btn quiet" id="recCancel" type="button" hidden>Cancel</button>
+        </div>
+        <dl class="rules" aria-label="Video requirements">
+          <div><dt>Format</dt><dd id="ruleFormat">MP4 or MOV</dd></div>
+          <div><dt>Length</dt><dd id="ruleLength">3 to 30 seconds</dd></div>
+          <div><dt>Size</dt><dd id="ruleSize">up to 100 MB</dd></div>
+        </dl>
+        <p class="fileinfo" id="fileInfo" aria-live="polite">Record yourself, upload a video, or drag one onto this page.</p>
       </div>
 
       <div class="monitors">
         <div class="monitor">
-          <div class="screen" id="origScreen">
-            <div class="empty" id="origEmpty"><strong>Your take</strong>Choose a video of yourself to start.</div>
+          <div class="screen pickable" id="origScreen">
+            <div class="empty" id="origEmpty"><strong>Your take</strong>Drag a video here, or use Record or Upload video above.</div>
             <video id="orig" playsinline preload="auto" hidden></video>
+            <p class="cam-tip" id="camTip" hidden>Face the camera with your upper body in frame and good light.</p>
+            <div class="countdown" id="countdown" aria-live="assertive" hidden></div>
+            <div class="rec-pill" id="recPill" hidden><span class="dot"></span><span id="recTime">0:00 / 0:30</span></div>
+            <div class="rec-bar" id="recBar" hidden><span class="fill" id="recFill"></span><span class="min" id="recMin"><span>min</span></span></div>
+            <div class="drop-hint" id="dropHint" hidden>Drop to use this video</div>
           </div>
           <div class="caption"><h2>Original</h2><span id="keyTime"></span></div>
           <input class="scrub" id="scrub" type="range" min="0" max="1" step="0.01" value="0" disabled aria-label="Keyframe position">
@@ -455,6 +553,20 @@ const EDIT_WORDS = ["only ", "just ", "colour of", "color of", "remove ", "add a
 
 const POLL_MS = new URLSearchParams(location.search).has("fastpoll") ? 150 : 2000;
 
+/* What the app accepts. Wan VideoEdit and p-video-animate take MP4/MOV; Luma takes up to 30 s;
+   the relay accepts uploads up to 100 MB. */
+const MIN_SECONDS = 3;
+const MAX_SECONDS = 30;
+const MAX_MB = 100;
+const ACCEPT_EXT = [".mp4", ".mov", ".m4v"];
+const ACCEPT_MIME = ["video/mp4", "video/quicktime", "video/x-m4v"];
+const RECORD_TYPES = [
+  "video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=avc1,mp4a", "video/mp4;codecs=avc1,opus",
+  "video/mp4;codecs=vp9,opus", "video/mp4",
+  "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm",
+];
+const CAMERA = { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } };
+
 /* ------------------------------------------------------------------ *
  * State and small helpers
  * ------------------------------------------------------------------ */
@@ -462,6 +574,10 @@ const $ = (s) => document.querySelector(s);
 const els = {
   key: $("#key"), showKey: $("#showKey"), remember: $("#rememberKey"), banner: $("#relayBanner"),
   file: $("#file"), fileBtn: $("#fileBtn"), fileInfo: $("#fileInfo"),
+  recBtn: $("#recBtn"), recStart: $("#recStart"), recStop: $("#recStop"), recCancel: $("#recCancel"),
+  ruleLength: $("#ruleLength"), ruleSize: $("#ruleSize"),
+  origScreen: $("#origScreen"), camTip: $("#camTip"), countdown: $("#countdown"), recPill: $("#recPill"),
+  recTime: $("#recTime"), recBar: $("#recBar"), recFill: $("#recFill"), recMin: $("#recMin"), dropHint: $("#dropHint"),
   orig: $("#orig"), origEmpty: $("#origEmpty"), scrub: $("#scrub"), keyTime: $("#keyTime"), scrubHint: $("#scrubHint"),
   newScreen: $("#newScreen"), newEmpty: $("#newEmpty"), newImg: $("#newImg"), result: $("#result"),
   newTitle: $("#newTitle"), newModel: $("#newModel"),
@@ -476,7 +592,8 @@ const els = {
 };
 
 const state = {
-  file: null, objectUrl: null, cap: null, info: null, plan: null,
+  file: null, objectUrl: null, cap: null, info: null, plan: null, recorded: false,
+  rec: { mode: "off", stream: null, recorder: null, started: 0, elapsed: 0, timer: null, discard: false },
   busy: false, cancel: false, approveResolver: null,
   schemas: new Map(), uploads: new Map(),
   spend: 0, lookUrl: null, outputUrl: null, outName: null,
@@ -949,13 +1066,18 @@ async function restyleVideo(instruction, strength) {
  * ------------------------------------------------------------------ */
 function refreshButtons() {
   const ready = !!(state.file && state.info);
-  els.planBtn.disabled = state.busy || !ready;
-  els.genBtn.disabled = state.busy || !state.plan;
+  const camera = state.rec.mode !== "off";
+  els.planBtn.disabled = state.busy || !ready || camera;
+  els.genBtn.disabled = state.busy || !state.plan || camera;
   els.cancelBtn.disabled = !state.busy;
   els.pipeline.disabled = state.busy || !state.plan;
   els.instruction.disabled = state.busy || !state.plan;
+  els.recBtn.disabled = state.busy;
   els.fileBtn.classList.toggle("disabled", state.busy);
+  els.fileBtn.setAttribute("aria-disabled", String(state.busy));
   els.file.disabled = state.busy;
+  els.scrub.disabled = !ready || camera;
+  els.origScreen.classList.toggle("pickable", !ready && !camera && !state.busy);
 }
 
 function setBusy(busy) {
@@ -1062,53 +1184,362 @@ function answerApproval(answer) {
   if (r) r(answer);
 }
 
-async function loadFile(file) {
-  if (!file) return;
-  setStatus("Loading video...");
+function showSourceMessage(text, isError = false) {
+  els.fileInfo.textContent = text;
+  els.fileInfo.classList.toggle("error", isError);
+  if (isError) { setStatus(text, true); log(text, true); }
+}
+
+/* Format and size checks that don't need to open the file. */
+function checkFileBasics(file, recorded) {
+  const name = file.name || "This file";
+  const ext = ((name.match(/\.[^.]+$/) || [""])[0]).toLowerCase();
+  const typeOk = recorded || ACCEPT_EXT.includes(ext) || ACCEPT_MIME.includes((file.type || "").toLowerCase());
+  if (!typeOk) return `${name} isn't an MP4 or MOV video. Convert it to MP4 and try again.`;
+  if (!file.size) return `${name} is empty.`;
+  if (file.size > MAX_MB * 1e6) {
+    return `${name} is ${Math.round(file.size / 1e6)} MB. The limit is ${MAX_MB} MB, so trim or compress it first.`;
+  }
+  return null;
+}
+
+/* Browser recordings often have no duration in their header; seeking to the end reveals it. */
+function resolveDuration(v, hint) {
+  return new Promise((resolve) => {
+    let finished = false;
+    const finish = (d) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      v.removeEventListener("durationchange", check);
+      v.removeEventListener("timeupdate", check);
+      resolve(d);
+    };
+    const check = () => { if (Number.isFinite(v.duration) && v.duration > 0) finish(v.duration); };
+    const timer = setTimeout(() => finish(hint || 0), 6000);
+    v.addEventListener("durationchange", check);
+    v.addEventListener("timeupdate", check);
+    v.currentTime = 1e101;
+  });
+}
+
+async function probeVideo(url, hint) {
+  const v = document.createElement("video");
+  v.muted = true;
+  v.preload = "auto";
+  v.playsInline = true;
+  v.src = url;
+  await waitFor(v, "loadedmetadata");
+  let duration = v.duration;
+  if (!Number.isFinite(duration) || duration <= 0) duration = await resolveDuration(v, hint);
+  if (v.readyState < 2) await waitFor(v, "loadeddata").catch(() => {});
+  return { el: v, duration, width: v.videoWidth, height: v.videoHeight };
+}
+
+function showOriginal(mode) {
+  const camera = mode === "camera";
+  els.orig.hidden = mode === "empty";
+  els.origEmpty.hidden = mode !== "empty";
+  els.orig.classList.toggle("mirror", camera);
+  els.orig.controls = false;
+}
+
+async function loadFile(file, opts = {}) {
+  if (!file || state.busy || state.rec.mode !== "off") return;
+  const problem = checkFileBasics(file, opts.recorded);
+  if (problem) { showSourceMessage(problem, true); return; }
+
+  setStatus("Checking the video...");
+  const url = URL.createObjectURL(file);
+  let probe;
+  try {
+    probe = await probeVideo(url, opts.hint);
+  } catch (err) {
+    URL.revokeObjectURL(url);
+    showSourceMessage(friendlyError(err), true);
+    return;
+  }
+  const d = probe.duration;
+  let tooBad = null;
+  if (!probe.width) tooBad = "This file has no picture this browser can show. Export it as an H.264 MP4 and try again.";
+  else if (d < MIN_SECONDS - 0.3) tooBad = `This clip is ${d.toFixed(1)} seconds long. Use a clip of at least ${MIN_SECONDS} seconds.`;
+  else if (d > MAX_SECONDS + 0.5) tooBad = `This clip is ${fmtTime(d)} long. Trim it to ${MAX_SECONDS} seconds or less, then try again.`;
+  if (tooBad) {
+    probe.el.removeAttribute("src");
+    URL.revokeObjectURL(url);
+    showSourceMessage(tooBad, true);
+    return;
+  }
+
+  // The video passed every check, so it replaces the current one.
   showNewEmpty();
   resetPlan();
-  state.info = null;
   state.lookUrl = state.outputUrl = null;
   if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
   state.file = file;
-  state.objectUrl = URL.createObjectURL(file);
-  const v = els.orig;
-  v.hidden = false;
-  els.origEmpty.hidden = true;
-  v.muted = true;
-  v.src = state.objectUrl;
-  state.cap = document.createElement("video");
-  state.cap.muted = true;
-  state.cap.preload = "auto";
-  state.cap.playsInline = true;
-  state.cap.src = state.objectUrl;
-  try {
-    await Promise.all([waitFor(v, "loadedmetadata"), waitFor(state.cap, "loadeddata")]);
-    if (!v.videoWidth) throw new Error("This file has no picture this browser can show. Try an H.264 MP4.");
-    state.info = { duration: v.duration || 0, width: v.videoWidth, height: v.videoHeight, sizeMB: file.size / 1e6 };
-  } catch (err) {
-    state.file = null;
-    v.hidden = true;
-    els.origEmpty.hidden = false;
-    setStatus(friendlyError(err), true);
-    log(friendlyError(err), true);
-    refreshButtons();
-    return;
-  }
+  state.objectUrl = url;
+  state.cap = probe.el;
+  state.recorded = !!opts.recorded;
+  state.info = { duration: d, width: probe.width, height: probe.height, sizeMB: file.size / 1e6 };
+  showOriginal("video");
+  els.orig.srcObject = null;
+  els.orig.muted = true;
+  els.orig.src = url;
+  await waitFor(els.orig, "loadedmetadata").catch(() => {});
+
   const i = state.info;
-  els.fileInfo.textContent = `${file.name}: ${fmtTime(i.duration)}, ${i.width} × ${i.height}, ${i.sizeMB.toFixed(1)} MB`;
-  if (i.sizeMB > 100) log("Files over about 100 MB can fail to upload. Trim or compress it if that happens.");
-  if (i.duration > 30) log("Clips over 30 s cost more, and only the Recast pipeline takes them.");
+  const label = opts.recorded ? "Your recording" : file.name;
+  showSourceMessage(`${label}: ${fmtTime(i.duration)}, ${i.width} × ${i.height}, ${i.sizeMB.toFixed(1)} MB`);
+  if (opts.recorded) {
+    const save = document.createElement("button");
+    save.type = "button";
+    save.className = "btn quiet";
+    save.id = "saveRec";
+    save.textContent = "Save recording";
+    save.addEventListener("click", () => saveUrl(state.objectUrl, file.name));
+    els.fileInfo.append(save);
+  }
   els.scrub.max = Math.max(i.duration - 0.05, 0.01);
-  els.scrub.disabled = false;
+  refreshButtons();
   setStatus("Finding a sharp keyframe...");
   const t = await pickKeyframeTime(i.duration);
   els.scrub.value = t;
-  await seek(v, t);
+  await seek(els.orig, t);
   updateKeyLabel();
   setStatus("Video loaded. Drag the slider to pick a clear pose, then plan the shot.");
   refreshButtons();
 }
+
+/* ------------------------------------------------------------------ *
+ * Recording with the camera
+ * ------------------------------------------------------------------ */
+function pickRecordType() {
+  return RECORD_TYPES.find((t) => { try { return MediaRecorder.isTypeSupported(t); } catch { return false; } }) || "";
+}
+
+function cameraError(err) {
+  const name = err && err.name;
+  if (name === "NotAllowedError" || name === "SecurityError") {
+    return "Camera access was blocked. Allow the camera and microphone for this site (the camera icon in the address bar), then try again.";
+  }
+  if (name === "NotFoundError" || name === "OverconstrainedError") return "No camera was found. Connect one, or upload a video instead.";
+  if (name === "NotReadableError" || name === "AbortError") return "The camera is busy in another app. Close that app, then try again.";
+  return `Couldn't start the camera: ${short(err)}`;
+}
+
+function setRecMode(mode) {
+  state.rec.mode = mode;
+  const off = mode === "off";
+  els.recBtn.hidden = !off;
+  els.fileBtn.hidden = !off;
+  els.recStart.hidden = mode !== "preview";
+  els.recStop.hidden = mode !== "recording";
+  els.recCancel.hidden = off;
+  els.recCancel.textContent = mode === "recording" ? "Discard" : "Cancel";
+  els.camTip.hidden = mode !== "preview";
+  els.countdown.hidden = mode !== "countdown";
+  els.recPill.hidden = mode !== "recording";
+  els.recBar.hidden = mode !== "recording";
+  refreshButtons();
+}
+
+function restoreOriginal() {
+  els.orig.srcObject = null;
+  if (state.objectUrl) {
+    showOriginal("video");
+    els.orig.src = state.objectUrl;
+    els.orig.currentTime = Number(els.scrub.value) || 0;
+  } else {
+    els.orig.removeAttribute("src");
+    showOriginal("empty");
+  }
+}
+
+function stopCamera() {
+  clearInterval(state.rec.timer);
+  state.rec.timer = null;
+  if (state.rec.stream) state.rec.stream.getTracks().forEach((t) => t.stop());
+  state.rec.stream = null;
+  els.orig.srcObject = null;
+}
+
+async function onRecord() {
+  if (state.busy || state.rec.mode !== "off") return;
+  if (!window.isSecureContext) {
+    showSourceMessage("Recording needs a secure page. Open the app from its https:// address.", true);
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === "undefined") {
+    showSourceMessage("This browser can't record video. Use a current version of Chrome, Edge or Safari, or upload a video instead.", true);
+    return;
+  }
+  setStatus("Asking for camera access...");
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: CAMERA, audio: true });
+  } catch (err) {
+    if (err && err.name === "NotFoundError") {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: CAMERA });
+        log("No microphone was found, so the recording will have no sound.");
+      } catch (err2) { showSourceMessage(cameraError(err2), true); return; }
+    } else { showSourceMessage(cameraError(err), true); return; }
+  }
+  state.rec.stream = stream;
+  stream.getVideoTracks()[0].addEventListener("ended", () => {
+    if (state.rec.mode === "recording") stopRecording(false);
+    else if (state.rec.mode !== "off") cancelCamera();
+  });
+  els.orig.pause();
+  els.orig.removeAttribute("src");
+  els.orig.srcObject = stream;
+  els.orig.muted = true;
+  showOriginal("camera");
+  els.orig.play().catch(() => {});
+  setRecMode("preview");
+  showSourceMessage(`Get into position, then start. You'll get a 3-second countdown, and recording stops by itself at ${MAX_SECONDS} seconds.`);
+  setStatus("Camera on. Start recording when you're ready.");
+}
+
+function beginCountdown() {
+  if (state.rec.mode !== "preview") return;
+  setRecMode("countdown");
+  let n = 3;
+  els.countdown.textContent = n;
+  state.rec.timer = setInterval(() => {
+    n -= 1;
+    if (n > 0) { els.countdown.textContent = n; return; }
+    clearInterval(state.rec.timer);
+    state.rec.timer = null;
+    startRecording();
+  }, 1000);
+}
+
+function startRecording() {
+  const stream = state.rec.stream;
+  if (!stream) return;
+  const type = pickRecordType();
+  let recorder;
+  try {
+    recorder = new MediaRecorder(stream, type ? { mimeType: type, videoBitsPerSecond: 5_000_000 } : { videoBitsPerSecond: 5_000_000 });
+  } catch {
+    recorder = new MediaRecorder(stream);
+  }
+  const chunks = [];
+  recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => finishRecording(chunks, recorder.mimeType || type);
+  recorder.start(1000);
+  state.rec.recorder = recorder;
+  state.rec.started = performance.now();
+  state.rec.discard = false;
+  els.recMin.style.left = `${(MIN_SECONDS / MAX_SECONDS) * 100}%`;
+  els.recMin.firstElementChild.textContent = `${MIN_SECONDS} s minimum`;
+  els.recStop.disabled = true;
+  setRecMode("recording");
+  setStatus("Recording...");
+  const tick = () => {
+    const elapsed = (performance.now() - state.rec.started) / 1000;
+    els.recTime.textContent = `${fmtTime(Math.floor(elapsed))} / ${fmtTime(MAX_SECONDS)}`;
+    els.recFill.style.width = `${Math.min(100, (elapsed / MAX_SECONDS) * 100)}%`;
+    const enough = elapsed >= MIN_SECONDS;
+    els.recStop.disabled = !enough;
+    showSourceMessage(enough
+      ? `Recording. Press Stop when you're done, or it stops at ${MAX_SECONDS} seconds.`
+      : `Recording. Keep going for at least ${MIN_SECONDS} seconds.`);
+    if (elapsed >= MAX_SECONDS - 0.3) stopRecording(false);
+  };
+  tick();
+  state.rec.timer = setInterval(tick, 100);
+}
+
+function stopRecording(discard) {
+  const r = state.rec.recorder;
+  if (!r || r.state === "inactive") return;
+  clearInterval(state.rec.timer);
+  state.rec.timer = null;
+  state.rec.discard = discard;
+  state.rec.elapsed = (performance.now() - state.rec.started) / 1000;
+  setStatus(discard ? "Discarding the recording..." : "Finishing the recording...");
+  r.stop();
+}
+
+function stamp() {
+  const d = new Date(), p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+
+async function finishRecording(chunks, mime) {
+  stopCamera();
+  state.rec.recorder = null;
+  restoreOriginal();
+  setRecMode("off");
+  if (state.rec.discard) {
+    showSourceMessage("Recording discarded.");
+    setStatus("Recording discarded.");
+    return;
+  }
+  const base = (mime || "video/webm").split(";")[0].trim() || "video/webm";
+  const ext = base.includes("mp4") ? ".mp4" : ".webm";
+  const file = new File(chunks, `recording-${stamp()}${ext}`, { type: base });
+  if (ext === ".webm") {
+    log("This browser saved the recording as WebM, not MP4. If a model rejects it, record in Chrome, Edge or Safari instead.");
+  }
+  await loadFile(file, { recorded: true, hint: state.rec.elapsed });
+}
+
+function cancelCamera() {
+  const mode = state.rec.mode;
+  if (mode === "off") return;
+  if (mode === "recording") { stopRecording(true); return; }
+  clearInterval(state.rec.timer);
+  state.rec.timer = null;
+  stopCamera();
+  restoreOriginal();
+  setRecMode("off");
+  showSourceMessage(state.file ? "Camera off. Your earlier video is still loaded." : "Camera off.");
+  setStatus("Camera off.");
+}
+
+/* ------------------------------------------------------------------ *
+ * Drag and drop anywhere on the page
+ * ------------------------------------------------------------------ */
+let dragDepth = 0;
+const draggingFiles = (e) => !!e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files");
+const canTakeVideo = () => !state.busy && state.rec.mode === "off";
+
+function setDropping(on) {
+  els.origScreen.classList.toggle("dropping", on);
+  els.dropHint.hidden = !on;
+  els.dropHint.textContent = canTakeVideo() ? "Drop to use this video" : "Finish the current step first";
+}
+
+document.addEventListener("dragenter", (e) => {
+  if (!draggingFiles(e)) return;
+  e.preventDefault();
+  dragDepth += 1;
+  setDropping(true);
+});
+document.addEventListener("dragover", (e) => {
+  if (!draggingFiles(e)) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = canTakeVideo() ? "copy" : "none";
+});
+document.addEventListener("dragleave", (e) => {
+  if (!draggingFiles(e)) return;
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (!dragDepth) setDropping(false);
+});
+document.addEventListener("drop", (e) => {
+  if (!draggingFiles(e)) return;
+  e.preventDefault();
+  dragDepth = 0;
+  setDropping(false);
+  if (!canTakeVideo()) { setStatus("Finish or cancel the current step before adding another video.", true); return; }
+  const files = Array.from(e.dataTransfer.files || []);
+  if (!files.length) return;
+  if (files.length > 1) log("Only the first file you dropped was used.");
+  loadFile(files[0]);
+});
 
 function updateKeyLabel() {
   els.keyTime.textContent = `Keyframe at ${Number(els.scrub.value).toFixed(1)} s`;
@@ -1219,7 +1650,7 @@ function onCancel() {
 async function saveUrl(url, filename) {
   setStatus(`Downloading ${filename}...`);
   try {
-    const src = url.startsWith("data:") ? url : `${relayBase()}/download?url=${encodeURIComponent(url)}`;
+    const src = /^(data|blob):/.test(url) ? url : `${relayBase()}/download?url=${encodeURIComponent(url)}`;
     const res = await fetch(src);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const blob = await res.blob();
@@ -1281,7 +1712,16 @@ els.showKey.addEventListener("click", () => {
 });
 els.remember.addEventListener("change", saveKeyPreference);
 els.fileBtn.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!state.busy) els.file.click(); } });
-els.file.addEventListener("change", () => loadFile(els.file.files[0]));
+els.file.addEventListener("change", () => { const f = els.file.files[0]; els.file.value = ""; loadFile(f); });
+els.recBtn.addEventListener("click", onRecord);
+els.recStart.addEventListener("click", beginCountdown);
+els.recStop.addEventListener("click", () => stopRecording(false));
+els.recCancel.addEventListener("click", cancelCamera);
+els.origScreen.addEventListener("click", () => {
+  if (!state.file && canTakeVideo()) els.file.click();
+});
+els.ruleLength.textContent = `${MIN_SECONDS} to ${MAX_SECONDS} seconds`;
+els.ruleSize.textContent = `up to ${MAX_MB} MB`;
 els.scrub.addEventListener("input", () => { els.orig.pause(); els.orig.currentTime = Number(els.scrub.value); updateKeyLabel(); });
 document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener("change", () => {
   const describe = document.querySelector('input[name="mode"]:checked').value === "describe";
